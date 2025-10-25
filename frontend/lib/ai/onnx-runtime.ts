@@ -34,7 +34,7 @@ export async function initializeONNXRuntime() {
 export async function loadModel(modelPath: string): Promise<ort.InferenceSession | null> {
   try {
     const session = await ort.InferenceSession.create(modelPath, {
-      executionProviders: ['webgl', 'wasm'], // WebGL 優先（GPU 加速），WASM 降級
+      executionProviders: ['webgpu', 'wasm'], // WebGPU 優先（GPU 加速），WASM 降級
       graphOptimizationLevel: 'all',
     });
 
