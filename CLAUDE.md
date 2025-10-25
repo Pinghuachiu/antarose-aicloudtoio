@@ -688,8 +688,9 @@ If irrelevant files are found in commits:
    - Recommend optimizations
 
 4. **Issue Reporting**
-   - Notify frontend engineers when SEO issues are found
-   - Provide specific implementation guidance
+   - Report SEO issues to CTO with detailed findings
+   - Provide specific implementation guidance and recommendations
+   - CTO will delegate fixes to appropriate frontend engineers
 
 ### MANDATORY: Standard Development Flow Checkpoints
 
@@ -755,7 +756,8 @@ If irrelevant files are found in commits:
 - Verify Open Graph and Twitter Card tags
 - Check Core Web Vitals readiness (LCP, FID, CLS optimization)
 - Validate canonical tags and URL structure
-- Notify frontend developers when SEO issues found
+- **Report findings to CTO** (not directly to frontend developers)
+- Provide detailed SEO issue list with priority levels and fix recommendations
 
 **CTO Enforcement:**
 - ❌ **NEVER skip Style Validation for frontend work**
@@ -838,8 +840,8 @@ If irrelevant files are found in commits:
 |--------------|---------------------|---------------------|
 | Code Review Issues | Original Developer | Code Reviewer notifies |
 | Unit Test Failures | Original Developer | Developer self-corrects |
-| Style Validation Issues | Frontend Developer | Lisa notifies |
-| SEO Validation Issues | Frontend Developer | Lily notifies |
+| Style Validation Issues | Frontend Developer | Lisa → CTO → Frontend Developer |
+| SEO Validation Issues | Frontend Developer | Lily → CTO → Frontend Developer |
 | QA E2E Test Bugs (Backend) | Sharon | QA Team notifies |
 | QA E2E Test Bugs (Frontend) | Mark | QA Team notifies |
 
