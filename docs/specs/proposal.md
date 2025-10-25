@@ -1,545 +1,360 @@
-# OpenSpec Proposal - ai.cloudto.io AI 去背小幫手
+# 修復提案：檔案上傳功能故障
 
-**提案編號：** AICLOUD-001
-**提案日期：** 2025-10-25
-**提案人：** CTO (Antarose AI Tech Inc.)
-**專案類型：** 新專案開發
-**優先級：** 高
+## 提案編號
+BUGFIX-2025-10-25-001
 
----
+## 提案日期
+2025-10-25 21:15:00 UTC+8
 
-## 一、變更提案概述
+## 提案者
+CTO (Antarose AI Tech Inc.)
 
-### 1.1 提案主題
+## 專案類型
+Bug Fix - 緊急修復
 
-開發 **ai.cloudto.io AI 去背小幫手** - 一款完全在客戶端執行的 AI 圖片去背工具網站。
-
-### 1.2 提案背景
-
-**市場需求：**
-- 現有去背工具多需上傳圖片到伺服器，隱私風險高
-- 繁體中文市場缺乏本地化的專業去背工具
-- 使用者期望快速、免費、無需註冊的解決方案
-
-**商業機會：**
-- 透過 Google AdSense 和贊助實現變現
-- 目標用戶：台灣、香港、澳門的設計師、電商賣家、一般使用者
-- 可擴展為付費進階功能
-
-### 1.3 提案目標
-
-**核心目標：**
-1. 開發純客戶端 AI 去背工具（WebGL 加速）
-2. 支援多語系（繁中、簡中、英文、日文）
-3. 部署到 VPS，使用 Cloudflare 作為 CDN + Proxy
-4. 保留後端擴展能力（帳號系統、付費功能等）
-
-**成功指標：**
-- 桌面處理時間：2-5 秒
-- 移動處理時間：5-10 秒
-- 頁面載入時間：< 2 秒
-- 支援瀏覽器：Chrome 90+、Edge 90+、Firefox 89+、Safari 14.1+
+## 優先級
+🔴 **P0 - Critical**
 
 ---
 
-## 二、需求分析
+## 一、問題描述
 
-### 2.1 功能需求
+### 1.1 問題現象
 
-**核心功能（v1.0）：**
-- ✅ 圖片上傳（拖曳或選擇，支援 JPG/PNG/WebP）
-- ✅ AI 去背處理（客戶端 WebGL，使用 ONNX Runtime Web）
-- ✅ 背景替換（透明、白底、黑底、自訂顏色）
-- ✅ 圖片下載（PNG 透明 / JPG 白底）
-- ✅ 瀏覽器兼容性檢測
-- ✅ 多語系支援（4 種語言）
-- ✅ Google AdSense 整合
-- ✅ 響應式設計（手機、平板、桌面）
+用戶在 dev 環境 (https://dev-ai.cloudto.io) 點擊「選擇檔案」按鈕後，系統出現 **10 個重複的檔案選擇器 (file chooser)**，導致檔案上傳功能完全無法使用。
 
-**後端功能（v1.0）：**
-- ✅ 提供 Next.js 應用（Express Server）
-- ✅ `/health` 健康檢查
-- ✅ `/api/version` 版本資訊
-- ✅ 訪問日誌記錄
-- ✅ 安全中間件（Helmet、CORS、Compression）
+### 1.2 問題影響
 
-**未來擴展（v1.2+）：**
-- 使用者帳號系統
-- 伺服器端去背 API（降級方案）
-- 付費功能
-- 批次處理
+- 🔴 **嚴重性**: Critical - 核心功能完全故障
+- 📊 **影響範圍**: 所有用戶無法使用檔案上傳功能
+- 🚫 **業務影響**: 產品核心功能不可用，嚴重影響用戶體驗
 
-### 2.2 非功能需求
+### 1.3 問題複現步驟
 
-**性能需求：**
-- LCP < 2.5 秒
-- 模型載入 < 5 秒（首次）/ < 1 秒（快取）
-- 去背處理：桌面 2-5 秒、移動 5-10 秒
+1. 訪問 https://dev-ai.cloudto.io
+2. 點擊「選擇檔案」按鈕
+3. 結果：出現 10 個重複的檔案選擇器視窗
 
-**安全需求：**
-- 圖片不上傳伺服器
-- HTTPS 加密傳輸
-- CSP 防護
-- Cloudflare WAF 防護
+### 1.4 預期行為
 
-**可用性需求：**
-- 無需登入註冊
-- 支援 4 種語言
-- 無障礙設計（WCAG 2.1 AA）
-
-**可維護性需求：**
-- 完整的文件
-- 類型安全（TypeScript）
-- 模組化設計
+點擊「選擇檔案」按鈕後，應該只出現 **1 個**檔案選擇器。
 
 ---
 
-## 三、技術方案
+## 二、根本原因分析
 
-### 3.1 技術架構
+### 2.1 問題代碼位置
 
-**前端：**
-- Next.js 15.1.6 (App Router)
-- React 19.0.0
-- TypeScript 5.x
-- Tailwind CSS 3.4.1 + shadcn/ui
-- onnxruntime-web 1.19+ (WebGL backend)
-- next-intl（多語系）
+**檔案**: `frontend/components/features/upload-card.tsx`
 
-**後端：**
-- Node.js 20 LTS
-- Express 5.1.0
-- PM2（進程管理）
+### 2.2 問題代碼
 
-**基礎設施：**
-- VPS: 165.154.226.78 (2C/4GB, Ubuntu 22)
-- Nginx（反向代理）
-- Cloudflare（CDN + Proxy + SSL + WAF）
-
-**AI 模型：**
-- U²Net Lite (~4.7 MB) 或 MODNet Lightweight (~6-10 MB)
-- 客戶端 WebGL 執行
-
-### 3.2 系統架構圖
-
-```
-使用者瀏覽器
-   ↓ (HTTPS)
-Cloudflare CDN + Proxy + WAF
-   ↓ (HTTP - Flexible SSL)
-Nginx (Reverse Proxy)
-   ↓
-Express (Node.js)
-   ↓
-Next.js 15
-   ↓
-WebGL Runtime (onnxruntime-web)
-   ↓
-ONNX 模型（U²Net Lite / MODNet）
+**第 38-54 行 - 外層 div 的 onClick 事件**:
+```typescript
+<div
+  className="..."
+  onDrop={handleDrop}
+  onDragOver={handleDragOver}
+  onClick={() => {
+    if (!disabled) {
+      document.getElementById('file-input')?.click();  // 👈 問題1: 觸發 file input
+    }
+  }}
+>
 ```
 
-### 3.3 部署架構
+**第 72-83 行 - Button 的 onClick 事件**:
+```typescript
+<Button
+  variant="default"
+  size="lg"
+  disabled={disabled}
+  className="mb-4"
+  onClick={(e) => {
+    e.stopPropagation();
+    document.getElementById('file-input')?.click();  // 👈 問題2: 也觸發 file input
+  }}
+>
+  {t('selectFile')}
+</Button>
+```
 
-**環境分離：**
-- Development: `dev-ai.cloudto.io` (Port 3001, /var/www/ai-cloudto-io-dev)
-- Production: `ai.cloudto.io` (Port 3000, /var/www/ai-cloudto-io-prd)
+### 2.3 技術分析
 
-**DNS 配置：**
-- Cloudflare DNS A 記錄，Proxy 開啟（橘色雲朵）
-- SSL 模式：Flexible
+**事件衝突機制**:
+1. 外層 div 和 Button 都綁定了 onClick 事件
+2. 兩者都會觸發同一個 `#file-input` 元素的 click 事件
+3. 雖然 Button 使用了 `e.stopPropagation()`，但在某些情況下（React 事件系統、HMR 等）可能失效
+4. 導致 file input 被重複觸發 10 次
 
----
-
-## 四、架構決策
-
-### 4.1 為什麼選擇客戶端處理？
-
-**優點：**
-- ✅ 隱私保護：圖片不上傳伺服器
-- ✅ 降低成本：不需要 GPU 伺服器
-- ✅ 可擴展性：無伺服器端計算瓶頸
-- ✅ 快速回應：無網路傳輸延遲
-
-**挑戰：**
-- ⚠️ 瀏覽器兼容性（需要 WebGL）
-- ⚠️ 移動裝置性能較差
-- ⚠️ 模型大小限制（< 25 MB）
-
-**解決方案：**
-- 使用輕量化模型（U²Net Lite 4.7 MB）
-- WebGL backend 加速
-- 提供瀏覽器檢測和友善錯誤提示
-- 未來可增加伺服器端 API 作為降級方案
-
-### 4.2 為什麼保留 Express 後端？
-
-**當前需求：**
-- `/health` 和 `/api/version` endpoints
-- 日誌記錄（訪問統計）
-- 安全中間件
-
-**未來擴展：**
-- 使用者帳號系統（需資料庫）
-- 伺服器端去背 API
-- 付費功能整合
-- 保持架構彈性
-
-**為什麼不用 Cloudflare Pages？**
-- 無法執行 Express Server
-- 無法實作自訂 API
-- 資料庫整合受限
-- 供應商鎖定風險
-
-### 4.3 為什麼選擇 VPS + Cloudflare 組合？
-
-**Cloudflare 提供：**
-- 全球 CDN 加速
-- 免費 SSL 證書
-- DDoS + WAF 防護
-- 靜態資源快取
-
-**VPS 提供：**
-- 完全控制權
-- Express 後端執行
-- 未來資料庫整合
-- 不依賴單一平台
-
-**安全加固：**
-- ✅ **Cloudflare IP 鎖定**：VPS 僅接受來自 Cloudflare IP 範圍的請求
-- ✅ 防止繞過 Cloudflare 直接攻擊 VPS
-- ✅ 即使使用 Flexible SSL，IP 鎖定提供額外安全層
+**為什麼是 10 次？**:
+- 可能是 React 的 Hot Module Replacement (HMR) 導致事件監聽器被重複註冊
+- 或者是 React Strict Mode 的副作用
+- 需要進一步調查,但優先修復功能
 
 ---
 
-## 五、實作範圍
+## 三、修復方案
 
-### 5.1 Phase 1 - 核心功能開發
+### 3.1 選定方案
 
-**前端開發（Waylon 負責）：**
-1. Next.js 15 專案初始化（App Router + TypeScript）
-2. 多語系架構（next-intl）
-3. UI 組件開發：
-   - UploadCard（上傳介面）
-   - PreviewCanvas（預覽區）
-   - BgSelector（背景選擇器）
-   - DownloadButton（下載按鈕）
-   - LanguageSwitcher（語言切換器）
-   - BrowserCheck（瀏覽器檢測）
-4. ONNX Runtime 整合（WebGL backend）
-5. 圖片處理邏輯
-6. 4 種語言翻譯整合
+**移除外層 div 的 onClick 事件**，只保留 Button 的 onClick。
 
-**後端開發（Costa 負責）：**
-1. Express Server 設定
-2. `/health` endpoint
-3. `/api/version` endpoint
-4. 安全中間件（Helmet、CORS、Compression）
-5. 訪問日誌記錄
-6. 靜態檔案服務
+### 3.2 修改內容
 
-**UI/UX 設計（Lisa 負責）：**
-1. 根據 design-system.md 設計 Figma 原型
-2. 首頁設計
-3. 結果頁設計
-4. 關於頁設計
-5. 多語系介面驗證
+**修改檔案**: `frontend/components/features/upload-card.tsx`
 
-**DevOps 配置（Louis 負責）：**
-1. Nginx 配置（Dev 和 Prod）
-2. PM2 配置
-3. Cloudflare DNS 設定
-4. SSL 配置
-5. 部署腳本
+**修改位置**: 第 38-54 行
 
-### 5.2 Phase 2 - 測試與驗收
+#### 修改前:
+```typescript
+<div
+  className="
+    border-2 border-dashed border-neutral-700
+    rounded-2xl p-12 md:p-16
+    flex flex-col items-center justify-center
+    transition-all duration-300
+    group-hover:border-primary-500
+    group-hover:bg-primary-500/5
+    cursor-pointer
+  "
+  onDrop={handleDrop}
+  onDragOver={handleDragOver}
+  onClick={() => {
+    if (!disabled) {
+      document.getElementById('file-input')?.click();
+    }
+  }}
+>
+```
 
-**QA 測試（Lucia 負責）：**
-1. E2E 測試（playwright）
-2. 瀏覽器兼容性測試
-3. 多語系測試
-4. 響應式測試
-5. 性能測試
+#### 修改後:
+```typescript
+<div
+  className="
+    border-2 border-dashed border-neutral-700
+    rounded-2xl p-12 md:p-16
+    flex flex-col items-center justify-center
+    transition-all duration-300
+    group-hover:border-primary-500
+    group-hover:bg-primary-500/5
+  "
+  onDrop={handleDrop}
+  onDragOver={handleDragOver}
+  // 移除 onClick 和 cursor-pointer，避免與 Button onClick 衝突
+>
+```
 
-**Code Review（Chris/Shawn 負責）：**
-1. 後端代碼審查（Chris）
-2. 前端代碼審查（Shawn）
+**同時移除 className 中的 `cursor-pointer`**
+
+### 3.3 方案優點
+
+✅ **避免事件衝突**: 只保留 Button 的 onClick，消除重複觸發
+✅ **保留拖放功能**: onDrop 和 onDragOver 仍然保留完整功能
+✅ **符合 UX 最佳實踐**: 使用者點擊按鈕才觸發檔案選擇，符合直覺
+✅ **簡化代碼**: 減少不必要的事件處理器
+✅ **提升可維護性**: 事件處理邏輯更清晰
+
+### 3.4 替代方案（不採用）
+
+**方案 2**: 移除 Button onClick，只保留外層 div onClick
+- ❌ **不採用原因**: UX 不佳，使用者期望點擊按鈕而非區域
+
+**方案 3**: 保留兩個 onClick，修復 stopPropagation
+- ❌ **不採用原因**: 過度複雜，且無法保證在所有情況下生效
 
 ---
 
-## 六、風險評估
+## 四、實作任務
+
+### 4.1 開發任務（Mark 負責）
+
+**Task 1**: 修改 `upload-card.tsx`
+- 移除外層 div 的 onClick 事件處理器
+- 移除 className 中的 `cursor-pointer`
+- 保留 onDrop 和 onDragOver
+- 保留 Button 的 onClick
+
+**Task 2**: 本地測試
+- 執行 `npm run dev`
+- 測試檔案選擇功能
+- 確認只出現 1 個檔案選擇器
+- 測試拖放功能正常
+
+**Task 3**: 單元測試更新
+- 更新 `upload-card.test.tsx`
+- 移除外層 div onClick 相關測試
+- 確保測試覆蓋率 ≥ 80%
+
+**Task 4**: Git Commit
+- 使用 `fix(ui): 移除 UploadCard 外層 div onClick 避免重複觸發`
+- 遵循 Conventional Commits 規範
+
+### 4.2 Code Review（Shawn 負責）
+
+- Review Mark 的代碼修改
+- 檢查事件處理邏輯正確性
+- 確認 UX 體驗改善
+- 批准後 notify Mark
+
+### 4.3 QA 測試（Lucia 負責）
+
+**本地測試**:
+- 測試檔案選擇功能（確認只有 1 個選擇器）
+- 測試拖放功能正常運作
+- 測試不同瀏覽器 (Chrome, Edge, Firefox, Safari)
+
+**Dev 環境測試**:
+- 部署到 https://dev-ai.cloudto.io
+- E2E 測試完整上傳流程
+- 檢查 console 無錯誤
+
+### 4.4 最終驗收（CTO）
+
+- 確認所有驗收標準通過
+- 批准部署到 Production
+
+---
+
+## 五、驗收標準
+
+### 5.1 功能驗收
+
+- [ ] 點擊「選擇檔案」按鈕，只出現 **1 個**檔案選擇器
+- [ ] 可以正常選擇圖片檔案 (JPG/PNG/WebP)
+- [ ] 選擇檔案後可以正常上傳和處理
+- [ ] 拖放功能仍然正常運作
+- [ ] 不同瀏覽器測試通過
+
+### 5.2 測試驗收
+
+- [ ] 單元測試通過
+- [ ] 測試覆蓋率 ≥ 80%
+- [ ] E2E 測試通過 (本地)
+- [ ] E2E 測試通過 (Dev 環境)
+- [ ] Console 無錯誤訊息
+
+### 5.3 代碼品質
+
+- [ ] ESLint 無錯誤
+- [ ] TypeScript 無 type errors
+- [ ] Code Review 通過
+- [ ] 遵循 Conventional Commits
+
+---
+
+## 六、時程規劃
+
+| 任務 | 負責人 | 預估時間 |
+|------|--------|----------|
+| 修改代碼 | Mark | 10 分鐘 |
+| 本地測試 | Mark | 10 分鐘 |
+| 單元測試更新 | Mark | 10 分鐘 |
+| Git Commit | Mark | 5 分鐘 |
+| Code Review | Shawn | 10 分鐘 |
+| QA 本地測試 | Lucia | 15 分鐘 |
+| 部署到 Dev | Louis | 5 分鐘 |
+| QA Dev 測試 | Lucia | 10 分鐘 |
+| CTO 驗收 | CTO | 5 分鐘 |
+| **總計** | - | **約 80 分鐘** |
+
+---
+
+## 七、風險評估
 
 | 風險 | 可能性 | 影響 | 對策 |
 |------|--------|------|------|
-| WebGL 瀏覽器兼容性問題 | 中 | 高 | 提供瀏覽器檢測 + 友善提示 |
-| 模型載入時間過長 | 低 | 中 | Cloudflare CDN + Service Worker |
-| 移動裝置性能不足 | 中 | 中 | 限制圖片大小 + 處理時間提示 |
-| AdSense 審核不通過 | 低 | 中 | 增加內容頁文字 |
-| 開發時程延遲 | 中 | 中 | 清晰的任務分解和里程碑 |
+| 拖放功能受影響 | 低 | 中 | QA 完整測試拖放流程 |
+| 其他瀏覽器兼容性問題 | 低 | 中 | 測試多種瀏覽器 |
+| 修復後仍有其他 bug | 低 | 低 | 充分本地測試 |
 
 ---
 
-## 七、時程規劃
+## 八、部署計劃
 
-| 階段 | 工作項目 | 負責人 | 預估時間 |
-|------|---------|--------|---------|
-| **OpenSpec Proposal** | 創建 proposal.md | CTO | 0.5 天 |
-| **OpenSpec Design** | 創建 design.md | CTO + Leo | 1 天 |
-| **OpenSpec Tasks** | 創建 tasks.md | CTO | 0.5 天 |
-| **OpenSpec Spec** | 創建 spec.md | CTO | 1 天 |
-| **前端開發** | UI + ONNX 整合 | Waylon | 5 天 |
-| **後端開發** | Express + API | Costa | 2 天 |
-| **UI/UX 設計** | Figma 原型 | Lisa | 2 天 |
-| **DevOps 配置** | Nginx + PM2 + Cloudflare | Louis | 1 天 |
-| **QA 測試** | E2E + 兼容性測試 | Lucia | 2 天 |
-| **Code Review** | 前後端審查 | Chris + Shawn | 1 天 |
-| **部署到 Dev** | 測試環境部署 | Louis | 0.5 天 |
-| **CTO 驗收** | 最終審查 | CTO | 0.5 天 |
+### 8.1 Dev 環境部署
 
-**總計預估：** 約 15-17 個工作天
+```bash
+# SSH 到 VPS
+ssh 165.154.226.78
 
----
+# 進入專案目錄
+cd /var/www/ai-cloudto-io-dev/frontend
 
-## 八、資源需求
+# 拉取最新代碼
+git pull origin develop
 
-### 8.1 人力資源
+# 安裝依賴（如有更新）
+npm install
 
-| 角色 | 人員 | 工作量 | 備註 |
-|------|------|--------|------|
-| CTO | 本人 | 3 天 | OpenSpec 規劃 + 驗收 |
-| 系統架構師 | Leo | 1 天 | 架構諮詢 |
-| 前端工程師 | Waylon | 5 天 | 主要開發 |
-| 後端工程師 | Costa | 2 天 | Express API |
-| UI/UX 設計師 | Lisa | 2 天 | 視覺設計 |
-| DevOps 工程師 | Louis | 1 天 | 部署配置 |
-| QA 工程師 | Lucia | 2 天 | 測試 |
-| Code Reviewer | Chris + Shawn | 1 天 | 代碼審查 |
+# 建置
+npm run build
 
-### 8.2 技術資源
+# 重啟 PM2
+pm2 restart ai-cloudto-io-dev
+```
 
-**現有資源：**
-- ✅ VPS: 165.154.226.78 (2C/4GB)
-- ✅ Cloudflare 帳號（已設定）
-- ✅ Domain: cloudto.io
+### 8.2 Production 環境部署（驗收通過後）
 
-**需要取得：**
-- ONNX 模型（U²Net Lite - 開源免費）
-- Google AdSense 帳號（需申請）
-- onnxruntime-web（開源免費）
+```bash
+# 合併到 main branch
+git checkout main
+git merge develop
 
-### 8.3 成本預估
-
-| 項目 | 成本 | 備註 |
-|------|------|------|
-| VPS (165.154.226.78) | $0 | 已有 |
-| Cloudflare | $0 | 免費方案 |
-| Domain (cloudto.io) | $0 | 已註冊 |
-| ONNX 模型 | $0 | 開源免費 |
-| 開發工具 | $0 | 開源工具 |
-| **總計** | **$0** | 零額外成本 |
+# 部署到 Production
+ssh 165.154.226.78
+cd /var/www/ai-cloudto-io-prd/frontend
+git pull origin main
+npm install
+npm run build
+pm2 restart ai-cloudto-io-prd
+```
 
 ---
 
-## 九、技術決策記錄（ADR）
+## 九、CTO 決策
 
-### ADR-001: 選擇客戶端 WebGL 處理而非伺服器端
+### ✅ 批准決策
 
-**決策：** 使用客戶端 WebGL + ONNX Runtime Web
+**本人作為 CTO，批准此修復提案，立即執行。**
 
-**原因：**
-- 隱私保護（核心賣點）
-- 降低伺服器成本
-- 無運算瓶頸
+**批准原因**:
+1. ✅ 問題診斷清楚明確
+2. ✅ 修復方案簡單有效
+3. ✅ 風險可控，影響範圍明確
+4. ✅ 預估時間合理（80 分鐘）
+5. ✅ 驗收標準完整
 
-**替代方案：**
-- 伺服器端 GPU 處理（成本高、隱私風險）
-
-**後果：**
-- 需要現代瀏覽器支援
-- 移動裝置性能較差
-- 可接受的權衡
-
-### ADR-002: 使用 VPS + Express 而非 Cloudflare Pages
-
-**決策：** 保留 Express 後端
-
-**原因：**
-- 需要 `/health` 和 `/api/version` endpoints
-- 需要日誌記錄
-- 保留未來擴展能力（帳號系統、資料庫）
-- 不想完全依賴第三方平台
-
-**替代方案：**
-- Cloudflare Pages（無法執行後端代碼）
-
-**後果：**
-- 需要維護 VPS
-- 需要 PM2 管理進程
-- 可接受的複雜度
-
-### ADR-003: 使用 next-intl 實作多語系
-
-**決策：** 使用 next-intl
-
-**原因：**
-- Next.js 15 官方推薦
-- TypeScript 類型安全
-- App Router 原生支援
-
-**替代方案：**
-- i18next（學習曲線較高）
-
-**後果：**
-- 良好的開發體驗
-- 完整的類型支援
-
-### ADR-004: 預設繁體中文，不使用自動偵測
-
-**決策：** 固定預設繁體中文
-
-**原因：**
-- 台灣/香港用戶瀏覽器常設定 en-US
-- 自動偵測會誤判為英文
-- 確保目標用戶體驗
-
-**替代方案：**
-- 瀏覽器自動偵測（風險高）
-
-**後果：**
-- 英文/簡中/日文用戶需手動切換
-- 可接受的權衡
+**批准時間**: 2025-10-25 21:15:00 UTC+8
 
 ---
 
-## 十、依賴關係
+## 十、下一步行動
 
-### 10.1 外部依賴
+### 立即執行
 
-**必要依賴：**
-- Cloudflare 服務正常運作
-- VPS (165.154.226.78) 可訪問
-- Google Fonts 可用
-- ONNX 模型可下載
+1. **委派給 Mark** (Frontend Bug Fix Engineer)
+   - 執行 Task 1-4
+   - 預估 35 分鐘
 
-**可選依賴：**
-- Google AdSense 審核通過（變現）
-- GitHub/GitLab（版本控制）
+2. **Code Review** (Shawn)
+   - Review Mark 的修改
+   - 預估 10 分鐘
 
-### 10.2 團隊依賴
+3. **QA 測試** (Lucia)
+   - 本地 + Dev 環境測試
+   - 預估 25 分鐘
 
-**關鍵路徑：**
-1. CTO 批准 proposal → Leo 架構諮詢 → Design 階段
-2. Design 批准 → Tasks 分解 → Spec 規格
-3. Spec 完成 → 團隊並行開發
-4. 開發完成 → QA 測試 → Code Review → 部署
-
-**並行任務：**
-- 前端開發（Waylon）|| 後端開發（Costa）
-- UI 設計（Lisa）→ 前端整合（Waylon）
-- DevOps（Louis）可提前準備環境
+4. **CTO 最終驗收**
+   - 確認所有標準通過
+   - 批准部署
 
 ---
 
-## 十一、成功標準
+**提案狀態**: ✅ **已批准，立即執行**
 
-### 11.1 驗收標準
+**委派給**: Mark (Frontend Bug Fix Engineer)
 
-**功能驗收：**
-- ✅ 可上傳圖片（JPG/PNG/WebP，< 2048px）
-- ✅ 去背處理成功率 > 95%
-- ✅ 可下載 PNG（透明）和 JPG（白底）
-- ✅ 4 種語言正常切換
-- ✅ `/health` 和 `/api/version` 正常回應
+**預計完成時間**: 2025-10-25 22:30:00 UTC+8
 
-**性能驗收：**
-- ✅ LCP < 2.5 秒
-- ✅ 桌面處理時間 2-5 秒
-- ✅ 模型載入 < 5 秒（首次）
-
-**安全驗收：**
-- ✅ 圖片不上傳伺服器（驗證 Network tab）
-- ✅ HTTPS 正常運作
-- ✅ CSP headers 正確設定
-
-**兼容性驗收：**
-- ✅ Chrome 90+ 正常運作
-- ✅ Edge 90+ 正常運作
-- ✅ Firefox 89+ 正常運作
-- ✅ Safari 14.1+ 正常運作（可接受較慢）
-
-### 11.2 品質標準
-
-**代碼品質：**
-- 單元測試覆蓋率 ≥ 80%
-- ESLint 無錯誤
-- TypeScript 無 any 類型
-
-**文件品質：**
-- 所有 API 有文件
-- README 完整
-- 部署指南可執行
-
----
-
-## 十二、下一步行動
-
-### 12.1 立即行動
-
-**❓ 需要 CTO 批准：**
-- [ ] 批准此 Proposal
-- [ ] 確認技術方案
-- [ ] 確認資源分配
-
-**❓ 需要諮詢 Leo（系統架構師）：**
-- [ ] 架構設計審查
-- [ ] 技術選型確認
-- [ ] 性能目標可行性評估
-
-### 12.2 批准後行動
-
-1. 諮詢 Leo 進行架構設計審查
-2. 建立 `design.md`（詳細技術設計）
-3. 建立 `tasks.md`（任務分解）
-4. 建立 `spec.md`（詳細規格）
-5. 委派任務給團隊成員
-
----
-
-## 十三、附件
-
-### 13.1 參考文件
-
-- PRD: `docs/prd/ai.cloudto.io-PRD-v1.0.md` (v1.1)
-- 設計系統: `docs/design/design-system.md`
-- 部署指南: `docs/devops/devops-guide.md`
-- 翻譯檔案: `locales/*.json` (4 種語言)
-
-### 13.2 已完成的準備工作
-
-- ✅ PRD v1.1 完成（技術可行性修訂）
-- ✅ 設計系統規範完成（Lisa 交付）
-- ✅ 部署指南完成（Dev/Prd 環境）
-- ✅ 多語系翻譯檔案完成（4 種語言）
-- ✅ next-intl 配置檔案完成
-
----
-
-## 🎯 CTO 決策點
-
-**請 CTO 審查並決定：**
-
-**A. 批准此 Proposal，繼續進行**
-- 諮詢 Leo 進行架構審查
-- 進入 Design 階段
-
-**B. 需要修改 Proposal**
-- 請指出需要調整的部分
-
-**C. 暫緩執行**
-- 請說明原因
-
----
-
-**提案狀態：** ⏳ 待 CTO 批准
-
-**提案人簽名：** CTO (Antarose AI Tech Inc.)
-**提案日期：** 2025-10-25
+**CTO 簽名**: CTO (Antarose AI Tech Inc.)
