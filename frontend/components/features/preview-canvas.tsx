@@ -69,12 +69,16 @@ export function PreviewCanvas({
             </div>
           </div>
 
-          {/* 去背圖層 */}
+          {/* 去背圖層（棋盤格背景顯示透明度） */}
           {processedImage && (
             <>
               <div
                 className="absolute inset-0 overflow-hidden transition-all duration-75"
-                style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                style={{
+                  clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
+                  backgroundImage:
+                    'repeating-conic-gradient(#808080 0% 25%, #ffffff 0% 50%) 50% / 20px 20px',
+                }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
