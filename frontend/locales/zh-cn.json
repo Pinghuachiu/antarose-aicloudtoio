@@ -1,0 +1,151 @@
+{
+  "common": {
+    "appName": "AI 去背小助手",
+    "tagline": "免登录・不上传・全程本地处理",
+    "language": "语言",
+    "languageName": "简体中文"
+  },
+  "nav": {
+    "home": "首页",
+    "about": "关于",
+    "privacy": "隐私政策"
+  },
+  "hero": {
+    "title": "AI 去背小助手",
+    "subtitle": "免登录・不上传・全程本地处理",
+    "description": "免费在线图片去背工具，使用 AI 技术，所有处理在浏览器完成，隐私安全快速。",
+    "cta": "开始去背",
+    "features": {
+      "privacy": "隐私保护",
+      "privacyDesc": "图片不上传服务器",
+      "fast": "快速处理",
+      "fastDesc": "桌面 2-5 秒完成",
+      "free": "完全免费",
+      "freeDesc": "无需注册登录"
+    }
+  },
+  "upload": {
+    "title": "上传图片",
+    "dragDrop": "拖拽图片到这里",
+    "or": "或",
+    "selectFile": "选择文件",
+    "supportedFormats": "支持格式：JPG、PNG、WebP",
+    "maxSize": "最大尺寸：2048 x 2048 px",
+    "processing": "处理中...",
+    "uploading": "上传中..."
+  },
+  "preview": {
+    "title": "预览结果",
+    "original": "原图",
+    "result": "去背后",
+    "compare": "对比模式",
+    "changeBackground": "更换背景",
+    "backgrounds": {
+      "transparent": "透明",
+      "white": "白色",
+      "black": "黑色",
+      "custom": "自定义颜色"
+    }
+  },
+  "download": {
+    "title": "下载图片",
+    "downloadPNG": "下载 PNG（透明）",
+    "downloadJPG": "下载 JPG（白底）",
+    "downloading": "下载中...",
+    "success": "下载成功！",
+    "newImage": "处理新图片"
+  },
+  "steps": {
+    "title": "使用步骤",
+    "step1": {
+      "title": "上传图片",
+      "desc": "选择或拖拽图片文件"
+    },
+    "step2": {
+      "title": "AI 处理",
+      "desc": "浏览器本地执行 AI 去背"
+    },
+    "step3": {
+      "title": "下载结果",
+      "desc": "一键下载透明背景图片"
+    }
+  },
+  "browserCheck": {
+    "unsupported": "您的浏览器不支持此功能",
+    "requireWebGL": "本工具需要支持 WebGL 2.0 的现代浏览器",
+    "recommendBrowsers": "建议使用：Chrome 90+、Edge 90+、Firefox 89+",
+    "downloadChrome": "下载 Chrome",
+    "downloadEdge": "下载 Edge",
+    "downloadFirefox": "下载 Firefox"
+  },
+  "loading": {
+    "loadingModel": "载入 AI 模型中...",
+    "firstTimeNotice": "首次载入需要约 5 秒，之后会缓存到本地",
+    "progress": "进度",
+    "almostDone": "即将完成...",
+    "processing": "处理中 {{progress}}%"
+  },
+  "errors": {
+    "title": "发生错误",
+    "modelLoadFailed": "模型载入失败",
+    "modelLoadFailedDesc": "请检查网络连接并重试",
+    "processingFailed": "处理失败",
+    "processingFailedDesc": "请尝试使用较小的图片",
+    "imageTooLarge": "图片太大",
+    "imageTooLargeDesc": "请使用小于 2048 x 2048 像素的图片",
+    "memoryError": "内存不足",
+    "memoryErrorDesc": "您的设备内存不足，请使用较小的图片或在桌面设备上使用",
+    "retry": "重试",
+    "cancel": "取消"
+  },
+  "about": {
+    "title": "关于本项目",
+    "introduction": "ai.cloudto.io 是一款完全在浏览器本地执行的 AI 图片去背工具，使用 WebGL 加速的 ONNX Runtime 处理图片，确保您的隐私安全。",
+    "features": {
+      "title": "核心特色",
+      "privacy": "隐私优先：图片从不上传到服务器",
+      "fast": "快速处理：使用 WebGL GPU 加速",
+      "free": "完全免费：无需注册或付费",
+      "openSource": "开源技术：基于 ONNX Runtime Web"
+    },
+    "technology": {
+      "title": "技术说明",
+      "model": "AI 模型：U²Net Lite / MODNet",
+      "runtime": "执行环境：ONNX Runtime Web (WebGL)",
+      "framework": "前端框架：Next.js 15 + React 19",
+      "styling": "样式系统：Tailwind CSS + shadcn/ui"
+    },
+    "support": {
+      "title": "支持我们",
+      "buyMeCoffee": "赞助一杯咖啡",
+      "github": "GitHub 项目",
+      "issues": "报告问题"
+    }
+  },
+  "privacy": {
+    "title": "隐私政策",
+    "lastUpdated": "最后更新",
+    "section1": {
+      "title": "数据收集",
+      "content": "本网站不收集、不存储任何用户上传的图片。所有图片处理完全在您的浏览器本地执行，不会上传到我们的服务器。"
+    },
+    "section2": {
+      "title": "日志记录",
+      "content": "我们仅记录基本的访问日志（访问时间、浏览器类型、来源网址），用于分析和改进服务。这些日志不包含任何个人识别信息。"
+    },
+    "section3": {
+      "title": "第三方服务",
+      "content": "本网站使用 Google Analytics 和 Google AdSense。这些服务可能会设置 cookies。您可以通过浏览器设置拒绝 cookies。"
+    }
+  },
+  "footer": {
+    "copyright": "© 2025 CloudTo.io All rights reserved",
+    "links": {
+      "about": "About",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "contact": "Contact"
+    },
+    "poweredBy": "Powered by"
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "common": {
+    "appName": "AI 背景除去ツール",
+    "tagline": "ログイン不要・アップロード不要・完全ローカル処理",
+    "language": "言語",
+    "languageName": "日本語"
+  },
+  "nav": {
+    "home": "ホーム",
+    "about": "について",
+    "privacy": "プライバシー"
+  },
+  "hero": {
+    "title": "AI 背景除去ツール",
+    "subtitle": "ログイン不要・アップロード不要・完全ローカル処理",
+    "description": "AIを使用した無料のオンライン背景除去ツール。すべての処理はブラウザ内で完結し、プライバシーとセキュリティを保護します。",
+    "cta": "今すぐ始める",
+    "features": {
+      "privacy": "プライバシー保護",
+      "privacyDesc": "画像はサーバーにアップロードされません",
+      "fast": "高速処理",
+      "fastDesc": "デスクトップで 2-5 秒",
+      "free": "完全無料",
+      "freeDesc": "登録不要"
+    }
+  },
+  "upload": {
+    "title": "画像をアップロード",
+    "dragDrop": "ここに画像をドラッグ＆ドロップ",
+    "or": "または",
+    "selectFile": "ファイルを選択",
+    "supportedFormats": "対応形式：JPG、PNG、WebP",
+    "maxSize": "最大サイズ：2048 x 2048 px",
+    "processing": "処理中...",
+    "uploading": "アップロード中..."
+  },
+  "preview": {
+    "title": "結果をプレビュー",
+    "original": "元の画像",
+    "result": "結果",
+    "compare": "比較",
+    "changeBackground": "背景を変更",
+    "backgrounds": {
+      "transparent": "透明",
+      "white": "白",
+      "black": "黒",
+      "custom": "カスタム色"
+    }
+  },
+  "download": {
+    "title": "画像をダウンロード",
+    "downloadPNG": "PNG をダウンロード（透明）",
+    "downloadJPG": "JPG をダウンロード（白背景）",
+    "downloading": "ダウンロード中...",
+    "success": "ダウンロード成功！",
+    "newImage": "新しい画像を処理"
+  },
+  "steps": {
+    "title": "使い方",
+    "step1": {
+      "title": "画像をアップロード",
+      "desc": "画像ファイルを選択またはドラッグ"
+    },
+    "step2": {
+      "title": "AI 処理",
+      "desc": "ブラウザ内でローカル処理"
+    },
+    "step3": {
+      "title": "結果をダウンロード",
+      "desc": "透明 PNG をすぐにダウンロード"
+    }
+  },
+  "browserCheck": {
+    "unsupported": "お使いのブラウザは対応していません",
+    "requireWebGL": "このツールは WebGL 2.0 対応の最新ブラウザが必要です",
+    "recommendBrowsers": "推奨：Chrome 90+、Edge 90+、Firefox 89+",
+    "downloadChrome": "Chrome をダウンロード",
+    "downloadEdge": "Edge をダウンロード",
+    "downloadFirefox": "Firefox をダウンロード"
+  },
+  "loading": {
+    "loadingModel": "AI モデルを読み込み中...",
+    "firstTimeNotice": "初回読み込みは約 5 秒かかりますが、その後はローカルにキャッシュされます",
+    "progress": "進行状況",
+    "almostDone": "もうすぐ完了...",
+    "processing": "処理中 {{progress}}%"
+  },
+  "errors": {
+    "title": "エラーが発生しました",
+    "modelLoadFailed": "モデルの読み込みに失敗しました",
+    "modelLoadFailedDesc": "インターネット接続を確認して、もう一度お試しください",
+    "processingFailed": "処理に失敗しました",
+    "processingFailedDesc": "より小さい画像をお試しください",
+    "imageTooLarge": "画像が大きすぎます",
+    "imageTooLargeDesc": "2048 x 2048 ピクセル以下の画像を使用してください",
+    "memoryError": "メモリ不足",
+    "memoryErrorDesc": "デバイスのメモリが不足しています。より小さい画像を使用するか、デスクトップデバイスでお試しください",
+    "retry": "再試行",
+    "cancel": "キャンセル"
+  },
+  "about": {
+    "title": "このプロジェクトについて",
+    "introduction": "ai.cloudto.io は、WebGL アクセラレーション ONNX Runtime を使用してブラウザ内で完全に実行される AI 背景除去ツールで、プライバシーとセキュリティを確保します。",
+    "features": {
+      "title": "主な機能",
+      "privacy": "プライバシー第一：画像はサーバーにアップロードされません",
+      "fast": "高速処理：WebGL GPU アクセラレーション",
+      "free": "完全無料：登録や支払い不要",
+      "openSource": "オープンソース：ONNX Runtime Web ベース"
+    },
+    "technology": {
+      "title": "技術仕様",
+      "model": "AI モデル：U²Net Lite / MODNet",
+      "runtime": "ランタイム：ONNX Runtime Web (WebGL)",
+      "framework": "フロントエンド：Next.js 15 + React 19",
+      "styling": "スタイリング：Tailwind CSS + shadcn/ui"
+    },
+    "support": {
+      "title": "サポート",
+      "buyMeCoffee": "コーヒーをおごる",
+      "github": "GitHub プロジェクト",
+      "issues": "問題を報告"
+    }
+  },
+  "privacy": {
+    "title": "プライバシーポリシー",
+    "lastUpdated": "最終更新",
+    "section1": {
+      "title": "データ収集",
+      "content": "当サイトは、ユーザーがアップロードした画像を収集・保存しません。すべての画像処理はブラウザ内で完全に実行され、サーバーにアップロードされることはありません。"
+    },
+    "section2": {
+      "title": "ログ記録",
+      "content": "基本的なアクセス情報（タイムスタンプ、ブラウザタイプ、リファラー）のみを分析とサービス改善のために記録します。これらのログには個人を特定できる情報は含まれません。"
+    },
+    "section3": {
+      "title": "サードパーティサービス",
+      "content": "当サイトは Google Analytics と Google AdSense を使用しています。これらのサービスは Cookie を設定する場合があります。ブラウザの設定で Cookie を拒否できます。"
+    }
+  },
+  "footer": {
+    "copyright": "© 2025 CloudTo.io 無断転載禁止",
+    "links": {
+      "about": "について",
+      "privacy": "プライバシー",
+      "terms": "利用規約",
+      "contact": "お問い合わせ"
+    },
+    "poweredBy": "技術提供"
+  }
+}

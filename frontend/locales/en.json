@@ -1,0 +1,151 @@
+{
+  "common": {
+    "appName": "AI Background Remover",
+    "tagline": "No Login・Privacy First・100% Local",
+    "language": "Language",
+    "languageName": "English"
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "privacy": "Privacy"
+  },
+  "hero": {
+    "title": "AI Background Remover",
+    "subtitle": "No Login・Privacy First・100% Local Processing",
+    "description": "Free online background removal tool powered by AI. All processing happens in your browser with WebGL acceleration for privacy and speed.",
+    "cta": "Get Started",
+    "features": {
+      "privacy": "Privacy Protected",
+      "privacyDesc": "Images never leave your device",
+      "fast": "Lightning Fast",
+      "fastDesc": "2-5 seconds on desktop",
+      "free": "Completely Free",
+      "freeDesc": "No signup required"
+    }
+  },
+  "upload": {
+    "title": "Upload Image",
+    "dragDrop": "Drag and drop your image here",
+    "or": "or",
+    "selectFile": "Select File",
+    "supportedFormats": "Supported formats: JPG, PNG, WebP",
+    "maxSize": "Max size: 2048 x 2048 px",
+    "processing": "Processing...",
+    "uploading": "Uploading..."
+  },
+  "preview": {
+    "title": "Preview Result",
+    "original": "Original",
+    "result": "Result",
+    "compare": "Compare",
+    "changeBackground": "Change Background",
+    "backgrounds": {
+      "transparent": "Transparent",
+      "white": "White",
+      "black": "Black",
+      "custom": "Custom Color"
+    }
+  },
+  "download": {
+    "title": "Download Image",
+    "downloadPNG": "Download PNG (Transparent)",
+    "downloadJPG": "Download JPG (White BG)",
+    "downloading": "Downloading...",
+    "success": "Download successful!",
+    "newImage": "Process New Image"
+  },
+  "steps": {
+    "title": "How It Works",
+    "step1": {
+      "title": "Upload Image",
+      "desc": "Select or drag your image file"
+    },
+    "step2": {
+      "title": "AI Processing",
+      "desc": "Background removal in your browser"
+    },
+    "step3": {
+      "title": "Download Result",
+      "desc": "Download transparent PNG instantly"
+    }
+  },
+  "browserCheck": {
+    "unsupported": "Your browser is not supported",
+    "requireWebGL": "This tool requires a modern browser with WebGL 2.0 support",
+    "recommendBrowsers": "Recommended: Chrome 90+, Edge 90+, Firefox 89+",
+    "downloadChrome": "Download Chrome",
+    "downloadEdge": "Download Edge",
+    "downloadFirefox": "Download Firefox"
+  },
+  "loading": {
+    "loadingModel": "Loading AI model...",
+    "firstTimeNotice": "First load takes about 5 seconds, then cached locally",
+    "progress": "Progress",
+    "almostDone": "Almost done...",
+    "processing": "Processing {{progress}}%"
+  },
+  "errors": {
+    "title": "Error Occurred",
+    "modelLoadFailed": "Failed to load model",
+    "modelLoadFailedDesc": "Please check your internet connection and try again",
+    "processingFailed": "Processing failed",
+    "processingFailedDesc": "Please try using a smaller image",
+    "imageTooLarge": "Image too large",
+    "imageTooLargeDesc": "Please use an image smaller than 2048 x 2048 pixels",
+    "memoryError": "Insufficient memory",
+    "memoryErrorDesc": "Your device doesn't have enough memory. Please use a smaller image or try on a desktop device",
+    "retry": "Retry",
+    "cancel": "Cancel"
+  },
+  "about": {
+    "title": "About This Project",
+    "introduction": "ai.cloudto.io is an AI-powered background removal tool that runs entirely in your browser using WebGL-accelerated ONNX Runtime, ensuring your privacy and security.",
+    "features": {
+      "title": "Key Features",
+      "privacy": "Privacy First: Images never uploaded to server",
+      "fast": "Fast Processing: WebGL GPU acceleration",
+      "free": "Completely Free: No registration or payment",
+      "openSource": "Open Source: Built on ONNX Runtime Web"
+    },
+    "technology": {
+      "title": "Technology",
+      "model": "AI Model: U²Net Lite / MODNet",
+      "runtime": "Runtime: ONNX Runtime Web (WebGL)",
+      "framework": "Frontend: Next.js 15 + React 19",
+      "styling": "Styling: Tailwind CSS + shadcn/ui"
+    },
+    "support": {
+      "title": "Support Us",
+      "buyMeCoffee": "Buy Me a Coffee",
+      "github": "GitHub Project",
+      "issues": "Report Issues"
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last Updated",
+    "section1": {
+      "title": "Data Collection",
+      "content": "This website does not collect or store any images uploaded by users. All image processing happens entirely in your browser and never uploads to our servers."
+    },
+    "section2": {
+      "title": "Logging",
+      "content": "We only log basic access information (timestamp, browser type, referrer) for analytics and service improvement. These logs do not contain any personally identifiable information."
+    },
+    "section3": {
+      "title": "Third-party Services",
+      "content": "This website uses Google Analytics and Google AdSense. These services may set cookies. You can refuse cookies through your browser settings."
+    }
+  },
+  "footer": {
+    "copyright": "© 2025 CloudTo.io All rights reserved",
+    "links": {
+      "about": "About",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "contact": "Contact"
+    },
+    "poweredBy": "Powered by"
+  }
+}
