@@ -5,51 +5,53 @@ import { UploadCard } from './upload-card';
 import { PreviewCanvas } from './preview-canvas';
 import { useToast } from '@/hooks/use-toast';
 import {
-  initializeONNXRuntime,
-  loadModel,
-  preprocessImage,
-  runInference,
-  postprocessMask,
-} from '@/lib/ai/onnx-runtime';
-import * as ort from 'onnxruntime-web';
+  initializeModel,
+  removeBackground,
+  checkWebGPUSupport,
+} from '@/lib/ai/transformers-bg-removal';
 
 export function UploadSection() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [session, setSession] = useState<ort.InferenceSession | null>(null);
+  const [modelReady, setModelReady] = useState(false);
   const { toast } = useToast();
 
-  // 初始化 ONNX Runtime（僅執行一次）
-  const initONNX = useCallback(async () => {
-    const initialized = await initializeONNXRuntime();
+  // 初始化 Transformers.js 模型（僅執行一次）
+  const initModel = useCallback(async () => {
+    if (modelReady) return true;
+
+    if (!checkWebGPUSupport()) {
+      toast({
+        title: '瀏覽器不支援',
+        description: '您的瀏覽器不支援 WebGPU。請使用 Chrome 113+ 或 Edge 113+',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    toast({
+      title: '載入 AI 模型中...',
+      description: '首次載入約需 10-20 秒，請稍候',
+    });
+
+    const initialized = await initializeModel();
     if (!initialized) {
       toast({
-        title: 'ONNX Runtime 初始化失敗',
-        description: '請重新整理頁面或使用其他瀏覽器',
-        variant: 'destructive',
-      });
-      return null;
-    }
-
-    // 載入模型
-    const loadedSession = await loadModel('/models/u2netp.onnx');
-    if (!loadedSession) {
-      toast({
         title: 'AI 模型載入失敗',
-        description: '無法載入模型檔案。請檢查 Console 查看詳細錯誤。',
+        description: '請檢查網路連線並重試',
         variant: 'destructive',
       });
-      return null;
+      return false;
     }
 
-    setSession(loadedSession);
+    setModelReady(true);
     toast({
       title: '模型載入成功',
       description: '準備開始處理圖片',
     });
-    return loadedSession;
-  }, [toast]);
+    return true;
+  }, [toast, modelReady]);
 
   // 處理檔案選擇
   const handleFileSelect = useCallback(
@@ -67,55 +69,43 @@ export function UploadSection() {
           const img = new Image();
           img.onload = async () => {
             try {
-              // 初始化 ONNX Runtime
-              const onnxSession = session || (await initONNX());
-              if (!onnxSession) {
+              // 初始化模型
+              const initialized = await initModel();
+              if (!initialized) {
                 setIsProcessing(false);
                 return;
               }
 
-              // 預處理圖片
-              const inputTensor = await preprocessImage(img);
-              if (!inputTensor) {
-                toast({
-                  title: '圖片預處理失敗',
-                  description: '無法處理圖片格式',
-                  variant: 'destructive',
-                });
-                setIsProcessing(false);
-                return;
-              }
+              // 執行背景移除
+              toast({
+                title: 'AI 處理中...',
+                description: '請稍候，處理時間約 5-15 秒',
+              });
 
-              // 執行推論
-              const outputTensor = await runInference(onnxSession, inputTensor);
-              if (!outputTensor) {
+              const result = await removeBackground(img);
+              if (!result) {
                 toast({
                   title: 'AI 處理失敗',
-                  description: '推論過程出錯，請查看 Console',
+                  description: '無法生成去背結果，請查看 Console',
                   variant: 'destructive',
                 });
                 setIsProcessing(false);
                 return;
               }
 
-              // 後處理遮罩
-              const resultCanvas = postprocessMask(outputTensor, img);
-              if (!resultCanvas) {
-                toast({
-                  title: '結果處理失敗',
-                  description: '無法生成去背結果',
-                  variant: 'destructive',
-                });
-                setIsProcessing(false);
-                return;
-              }
+              // 將 ImageData 轉換為 Canvas 並輸出
+              const canvas = document.createElement('canvas');
+              canvas.width = result.width;
+              canvas.height = result.height;
+              const ctx = canvas.getContext('2d')!;
+              ctx.putImageData(result, 0, 0);
 
               toast({
                 title: '處理完成！',
                 description: '您可以下載去背後的圖片',
               });
 
-              setProcessedImage(resultCanvas.toDataURL('image/png'));
+              setProcessedImage(canvas.toDataURL('image/png'));
               setIsProcessing(false);
             } catch (error) {
               console.error('[UploadSection] AI 處理錯誤:', error);
@@ -142,7 +132,7 @@ export function UploadSection() {
         setIsProcessing(false);
       }
     },
-    [toast, session, initONNX]
+    [toast, initModel]
   );
 
   // 下載圖片
