@@ -651,36 +651,132 @@ If irrelevant files are found in commits:
 3. **Issue Reporting**
    - Notify frontend engineers when style issues are found
 
-### Standard Development Flow
+### MANDATORY: Standard Development Flow Checkpoints
 
-**Project Execution Flow**: SpecKit/OpenSpec → Development → Unit Testing → Style Validation → QA Testing → CTO Acceptance
+**CRITICAL**: CTO MUST enforce the following checkpoints IN ORDER. NEVER skip any checkpoint.
 
-**Detailed Stages**:
+**Project Execution Flow**: SpecKit/OpenSpec → Development → Code Review → Unit Testing → Style Validation → QA Testing (Local + Online) → CTO Acceptance
 
-1. **Development Stage**
-   - Costa (Backend) / Waylon (Frontend) perform primary feature development
-   - Developers write and run unit tests after development completion
+---
 
-2. **Code Review Stage**
-   - Chris (Backend) / Shawn (Frontend) conduct code reviews
-   - **Issues found** → Notify developers for fixes
+#### **Checkpoint 1: Development Complete**
 
-3. **Unit Testing Stage**
-   - Developers run unit tests
-   - **Test failures** → Developers fix issues themselves
+**Developers MUST:**
+- ✅ Complete implementation according to spec.md
+- ✅ Commit code to Git with conventional commits
+- ✅ Write unit tests (target coverage ≥ 80%)
 
-4. **Style Validation Stage**
-   - Lisa validates UI implementation against design specifications
-   - **Issues found** → Notify developers for fixes
+**CTO Enforcement:**
+- ❌ **NEVER proceed to Code Review without Git commit**
+- ❌ **NEVER accept deliverables without unit tests**
 
-5. **QA Testing Stage**
-   - Lucia/Ann execute E2E tests (using playwright MCP tool and chrome-devtools MCP tool)
-   - **Bugs found** → Notify bug fix engineers (Sharon/Mark)
+---
 
-6. **CTO Acceptance Stage**
-   - After all project items are developed and validated
-   - CTO produces final summary report
-   - Confirms project meets all quality standards
+#### **Checkpoint 2: Code Review (MANDATORY)**
+
+**Code Reviewers MUST:**
+- Chris (Backend) / Shawn (Frontend) conduct code reviews
+- Review for: correctness, performance, security, best practices
+- Notify developers when issues are found
+
+**CTO Enforcement:**
+- ❌ **NEVER skip Code Review**
+- ❌ **NEVER proceed to next stage if issues found**
+- ⏸️ **STOP** → Developers fix issues → Re-review
+
+---
+
+#### **Checkpoint 3: Unit Testing Execution (MANDATORY)**
+
+**Developers MUST:**
+- Run unit tests: `npm run test`
+- Verify coverage ≥ 80%: `npm run test:coverage`
+- Fix all test failures
+
+**CTO Enforcement:**
+- ❌ **NEVER skip unit testing execution**
+- ❌ **NEVER accept coverage < 80%**
+- ⏸️ **STOP if tests fail** → Developers fix → Re-run tests
+
+---
+
+#### **Checkpoint 4: Style Validation (MANDATORY for Frontend)**
+
+**Lisa MUST:**
+- Validate UI against `design-system.md`
+- Check color, typography, spacing, components
+- Notify frontend developers when style issues found
+
+**CTO Enforcement:**
+- ❌ **NEVER skip Style Validation for frontend work**
+- ⏸️ **STOP if issues found** → Frontend developers fix → Re-validate
+
+---
+
+#### **Checkpoint 5: QA Testing (MANDATORY - Local + Online)**
+
+**Lucia/Ann MUST test BOTH environments:**
+
+**5.1 Local Environment Testing:**
+- Test on `http://localhost:5173` (frontend)
+- Test on `http://localhost:5566` (backend)
+- Use playwright (MCP tool) and chrome-devtools (MCP tool)
+
+**5.2 Online Environment Testing (after deployment):**
+- Test on `https://dev-ai.cloudto.io` (dev environment)
+- Or `https://ai.cloudto.io` (production environment)
+- Verify HTTPS, SSL, CDN, all functionality
+
+**CTO Enforcement:**
+- ❌ **NEVER skip local testing**
+- ❌ **NEVER skip online testing**
+- ❌ **NEVER accept "本地測試就好"**
+- ⏸️ **STOP if bugs found** → Sharon/Mark fix bugs → Re-test
+
+**Bugs Found:**
+- Backend bugs → Notify Sharon (bug fix engineer)
+- Frontend bugs → Notify Mark (bug fix engineer)
+
+---
+
+#### **Checkpoint 6: CTO Acceptance (FINAL)**
+
+**CTO MUST verify:**
+- ✅ All checkpoints 1-5 completed
+- ✅ All tests passed (unit + E2E)
+- ✅ Code Review approved
+- ✅ Style Validation approved (frontend)
+- ✅ QA Testing passed (local + online)
+- ✅ No Critical or High severity bugs
+- ✅ All documentation updated
+
+**CTO Enforcement:**
+- ❌ **NEVER accept deliverables that skip any checkpoint**
+- ❌ **NEVER accept without both local AND online testing**
+- ✅ Produce final summary report
+- ✅ Confirm project meets all quality standards
+
+---
+
+### Enforcement Rules
+
+**CTO Responsibility:**
+- ❌ **NEVER skip any checkpoint** (even if time-pressured)
+- ❌ **NEVER accept "直接部署測試"** without completing all checkpoints
+- ❌ **NEVER let developers skip unit tests or code review**
+- ⏸️ **ALWAYS STOP at each checkpoint** if issues found
+- ✅ **ALWAYS enforce the complete flow**: Development → Code Review → Unit Testing → Style Validation → QA (Local) → Deploy to Dev → QA (Online) → CTO Acceptance
+
+**Violation Handling:**
+- If CTO skips checkpoints → Self-correction required
+- If developers skip checkpoints → CTO rejects deliverables
+- If QA skips local or online testing → CTO rejects test report
+
+**This flow is NON-NEGOTIABLE and MUST be followed at all times.**
+
+---
+
+### Standard Development Flow (Detailed Stages)
 
 ### Bug & Issue Handling Matrix
 

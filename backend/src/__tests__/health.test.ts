@@ -2,6 +2,19 @@ import request from 'supertest'
 import express, { Application } from 'express'
 import healthRouter from '../routes/health'
 
+interface HealthResponse {
+  status: string
+  timestamp: string
+  uptime: number
+  environment: string
+  memory: {
+    used: number
+    total: number
+    rss: number
+  }
+  pid: number
+}
+
 describe('Health Endpoint', () => {
   let app: Application
 
@@ -18,43 +31,49 @@ describe('Health Endpoint', () => {
 
     it('should return JSON with status "ok"', async () => {
       const response = await request(app).get('/health')
-      expect(response.body.status).toBe('ok')
+      const body = response.body as HealthResponse
+      expect(body.status).toBe('ok')
     })
 
     it('should include timestamp in ISO format', async () => {
       const response = await request(app).get('/health')
-      expect(response.body.timestamp).toBeDefined()
-      expect(() => new Date(response.body.timestamp)).not.toThrow()
+      const body = response.body as HealthResponse
+      expect(body.timestamp).toBeDefined()
+      expect(() => new Date(body.timestamp)).not.toThrow()
     })
 
     it('should include uptime as a number', async () => {
       const response = await request(app).get('/health')
-      expect(response.body.uptime).toBeDefined()
-      expect(typeof response.body.uptime).toBe('number')
-      expect(response.body.uptime).toBeGreaterThanOrEqual(0)
+      const body = response.body as HealthResponse
+      expect(body.uptime).toBeDefined()
+      expect(typeof body.uptime).toBe('number')
+      expect(body.uptime).toBeGreaterThanOrEqual(0)
     })
 
     it('should include environment information', async () => {
       const response = await request(app).get('/health')
-      expect(response.body.environment).toBeDefined()
-      expect(typeof response.body.environment).toBe('string')
+      const body = response.body as HealthResponse
+      expect(body.environment).toBeDefined()
+      expect(typeof body.environment).toBe('string')
     })
 
     it('should include memory usage information', async () => {
       const response = await request(app).get('/health')
-      expect(response.body.memory).toBeDefined()
-      expect(response.body.memory.used).toBeDefined()
-      expect(response.body.memory.total).toBeDefined()
-      expect(response.body.memory.rss).toBeDefined()
-      expect(typeof response.body.memory.used).toBe('number')
-      expect(typeof response.body.memory.total).toBe('number')
-      expect(typeof response.body.memory.rss).toBe('number')
+      const body = response.body as HealthResponse
+      expect(body.memory).toBeDefined()
+      expect(body.memory.used).toBeDefined()
+      expect(body.memory.total).toBeDefined()
+      expect(body.memory.rss).toBeDefined()
+      expect(typeof body.memory.used).toBe('number')
+      expect(typeof body.memory.total).toBe('number')
+      expect(typeof body.memory.rss).toBe('number')
     })
 
     it('should include process ID', async () => {
       const response = await request(app).get('/health')
-      expect(response.body.pid).toBeDefined()
-      expect(typeof response.body.pid).toBe('number')
+      const body = response.body as HealthResponse
+      expect(body.pid).toBeDefined()
+      expect(typeof body.pid).toBe('number')
     })
 
     it('should have all required fields', async () => {

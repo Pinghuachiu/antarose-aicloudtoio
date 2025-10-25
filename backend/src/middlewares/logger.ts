@@ -18,8 +18,8 @@ export const logger = (req: Request, res: Response, next: NextFunction) => {
     const cloudflareIP = req.headers['cf-connecting-ip']
 
     let clientIP = 'unknown'
-    if (cloudflareIP) {
-      clientIP = cloudflareIP as string
+    if (typeof cloudflareIP === 'string') {
+      clientIP = cloudflareIP
     } else if (typeof xForwardedFor === 'string') {
       const firstIP = xForwardedFor.split(',')[0]
       clientIP = firstIP?.trim() || 'unknown'
@@ -28,8 +28,9 @@ export const logger = (req: Request, res: Response, next: NextFunction) => {
     }
 
     // Extract User-Agent and Referrer
-    const userAgent = req.headers['user-agent'] || 'unknown'
-    const referrer = req.headers['referer'] || req.headers['referrer'] || 'Direct'
+    const userAgent = (req.headers['user-agent'] as string) || 'unknown'
+    const refererHeader = req.headers['referer'] || req.headers['referrer']
+    const referrer = typeof refererHeader === 'string' ? refererHeader : (Array.isArray(refererHeader) && refererHeader[0] ? refererHeader[0] : 'Direct')
 
     // Construct log message with all details
     const logMessage = [

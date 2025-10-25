@@ -2,6 +2,15 @@ import request from 'supertest'
 import express, { Application } from 'express'
 import versionRouter from '../routes/version'
 
+interface VersionResponse {
+  app: string
+  commit: string
+  commitDate: string
+  buildTime: string
+  node: string
+  environment: string
+}
+
 describe('Version Endpoint', () => {
   let app: Application
 
@@ -18,39 +27,45 @@ describe('Version Endpoint', () => {
 
     it('should return JSON with app version', async () => {
       const response = await request(app).get('/api/version')
-      expect(response.body.app).toBeDefined()
-      expect(typeof response.body.app).toBe('string')
+      const body = response.body as VersionResponse
+      expect(body.app).toBeDefined()
+      expect(typeof body.app).toBe('string')
     })
 
     it('should include git commit information', async () => {
       const response = await request(app).get('/api/version')
-      expect(response.body.commit).toBeDefined()
-      expect(typeof response.body.commit).toBe('string')
+      const body = response.body as VersionResponse
+      expect(body.commit).toBeDefined()
+      expect(typeof body.commit).toBe('string')
     })
 
     it('should include commit date', async () => {
       const response = await request(app).get('/api/version')
-      expect(response.body.commitDate).toBeDefined()
-      expect(typeof response.body.commitDate).toBe('string')
+      const body = response.body as VersionResponse
+      expect(body.commitDate).toBeDefined()
+      expect(typeof body.commitDate).toBe('string')
     })
 
     it('should include build time', async () => {
       const response = await request(app).get('/api/version')
-      expect(response.body.buildTime).toBeDefined()
-      expect(typeof response.body.buildTime).toBe('string')
+      const body = response.body as VersionResponse
+      expect(body.buildTime).toBeDefined()
+      expect(typeof body.buildTime).toBe('string')
     })
 
     it('should include Node.js version', async () => {
       const response = await request(app).get('/api/version')
-      expect(response.body.node).toBeDefined()
-      expect(typeof response.body.node).toBe('string')
-      expect(response.body.node).toMatch(/^v\d+\.\d+\.\d+/)
+      const body = response.body as VersionResponse
+      expect(body.node).toBeDefined()
+      expect(typeof body.node).toBe('string')
+      expect(body.node).toMatch(/^v\d+\.\d+\.\d+/)
     })
 
     it('should include environment information', async () => {
       const response = await request(app).get('/api/version')
-      expect(response.body.environment).toBeDefined()
-      expect(typeof response.body.environment).toBe('string')
+      const body = response.body as VersionResponse
+      expect(body.environment).toBeDefined()
+      expect(typeof body.environment).toBe('string')
     })
 
     it('should have all required fields', async () => {
@@ -69,10 +84,11 @@ describe('Version Endpoint', () => {
       process.env.BUILD_TIME = '2025-10-25T12:00:00.000Z'
 
       const response = await request(app).get('/api/version')
+      const body = response.body as VersionResponse
 
-      expect(response.body.app).toBe('2.0.0')
-      expect(response.body.commit).toBe('abc1234')
-      expect(response.body.buildTime).toBe('2025-10-25T12:00:00.000Z')
+      expect(body.app).toBe('2.0.0')
+      expect(body.commit).toBe('abc1234')
+      expect(body.buildTime).toBe('2025-10-25T12:00:00.000Z')
 
       // Cleanup
       delete process.env.APP_VERSION

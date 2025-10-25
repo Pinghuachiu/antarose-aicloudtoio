@@ -10,7 +10,7 @@ type Props = {
 };
 
 export default async function HomePage({ params }: Props) {
-  const _params = await params;
+  await params;
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-16">

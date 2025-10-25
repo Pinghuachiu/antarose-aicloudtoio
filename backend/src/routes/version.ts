@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express'
+import { Router, Response } from 'express'
 import { execSync } from 'child_process'
 
 const router = Router()
@@ -10,7 +10,7 @@ const router = Router()
 function getGitCommit(): string {
   try {
     return execSync('git rev-parse --short HEAD').toString().trim()
-  } catch (error) {
+  } catch {
     return 'unknown'
   }
 }
@@ -22,7 +22,7 @@ function getGitCommit(): string {
 function getGitCommitDate(): string {
   try {
     return execSync('git log -1 --format=%cI').toString().trim()
-  } catch (error) {
+  } catch {
     return new Date().toISOString()
   }
 }
@@ -31,7 +31,7 @@ function getGitCommitDate(): string {
  * GET /api/version
  * Returns version information including app version, git commit, build time, and environment
  */
-router.get('/version', (_req: Request, res: Response) => {
+router.get('/version', (_req, res: Response) => {
   const version = {
     app: process.env.APP_VERSION || '1.0.0',
     commit: process.env.GIT_COMMIT || getGitCommit(),

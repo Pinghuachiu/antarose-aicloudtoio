@@ -1,7 +1,6 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import Image from 'next/image';
 import { Download, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,6 +61,8 @@ export function PreviewCanvas({
               src={originalImage}
               alt={t('original')}
               className="w-full h-full object-contain"
+              loading="lazy"
+              decoding="async"
             />
             <div className="absolute top-4 left-4 bg-neutral-900/80 backdrop-blur-sm px-3 py-1 rounded-lg text-caption text-neutral-300">
               {t('original')}
@@ -80,6 +81,8 @@ export function PreviewCanvas({
                   src={processedImage}
                   alt={t('result')}
                   className="w-full h-full object-contain"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute top-4 right-4 bg-primary-500/80 backdrop-blur-sm px-3 py-1 rounded-lg text-caption text-white">
                   {t('result')}
