@@ -17,6 +17,8 @@ export function UploadCard({ onFileSelect, disabled = false }: UploadCardProps) 
     const file = event.target.files?.[0];
     if (file) {
       onFileSelect(file);
+      // 清除 input value，避免 refresh 後重複觸發
+      event.target.value = '';
     }
   };
 
