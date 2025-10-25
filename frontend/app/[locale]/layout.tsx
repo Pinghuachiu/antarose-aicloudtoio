@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { Inter, Noto_Sans_TC, Noto_Sans_SC, Noto_Sans_JP } from 'next/font/google';
 import { locales, type Locale } from '@/locales';
+import { Toaster } from '@/components/ui/toaster';
 import '../globals.css';
 
 // 字體配置 - 多語系支援
