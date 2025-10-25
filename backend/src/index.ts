@@ -5,6 +5,7 @@ import compression from 'compression'
 import { logger } from './middlewares/logger'
 import { errorHandler } from './middlewares/error-handler'
 import healthRouter from './routes/health'
+import versionRouter from './routes/version'
 import helloRouter from './routes/hello'
 import errorExampleRouter from './routes/error-example'
 
@@ -34,6 +35,7 @@ app.use(logger)
 
 // Routes
 app.use('/health', healthRouter)
+app.use('/api', versionRouter)
 app.use('/api', helloRouter)
 app.use('/api', errorExampleRouter)
 
