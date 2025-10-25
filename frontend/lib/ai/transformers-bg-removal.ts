@@ -74,9 +74,20 @@ export async function removeBackground(imageElement: HTMLImageElement): Promise<
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const maskData = mask.data;
 
+    // 逐像素應用遮罩（前景保留，背景透明）
     for (let i = 0; i < imageData.data.length; i += 4) {
-      const maskValue = maskData[i / 4];
-      imageData.data[i + 3] = maskValue; // 設定 alpha 通道
+      const pixelIndex = i / 4;
+      const maskValue = maskData[pixelIndex];
+
+      // RMBG 模型：maskValue 越高表示越可能是前景
+      // 使用閾值 128 區分前景/背景
+      if (maskValue >= 128) {
+        // 前景：保持不變，alpha = 255
+        imageData.data[i + 3] = 255;
+      } else {
+        // 背景：設為透明
+        imageData.data[i + 3] = 0;
+      }
     }
 
     ctx.putImageData(imageData, 0, 0);
