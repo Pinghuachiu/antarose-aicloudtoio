@@ -43,15 +43,9 @@ export function UploadCard({ onFileSelect, disabled = false }: UploadCardProps) 
             transition-all duration-300
             group-hover:border-primary-500
             group-hover:bg-primary-500/5
-            cursor-pointer
           "
           onDrop={handleDrop}
           onDragOver={handleDragOver}
-          onClick={() => {
-            if (!disabled) {
-              document.getElementById('file-input')?.click();
-            }
-          }}
         >
           {/* 上傳圖示 - 漸變色 */}
           <div className="w-16 h-16 md:w-20 md:h-20 mb-6 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center shadow-lg shadow-primary-500/30 group-hover:scale-110 transition-transform">
