@@ -8,53 +8,39 @@ vi.mock('next-intl', async () => {
   return {
     ...actual,
     useTranslations: (namespace: string) => {
-      const messages: Record<string, Record<string, string | Record<string, string>>> = {
-        hero: {
-          title: 'AI 智能去背工具',
-          subtitle: '快速、免費、隱私安全',
-          description: '完全在瀏覽器本地運行，無需上傳圖片至伺服器',
-          features: {
-            privacy: '隱私安全',
-            privacyDesc: '所有處理都在本地進行',
-            fast: '快速高效',
-            fastDesc: '即時處理，無需等待',
-            free: '完全免費',
-            freeDesc: '無限次使用',
-          },
+      const allMessages: Record<string, Record<string, string>> = {
+        'hero': {
+          'title': 'AI 智能去背工具',
+          'subtitle': '快速、免費、隱私安全',
+          'description': '完全在瀏覽器本地運行，無需上傳圖片至伺服器',
         },
-        steps: {
-          title: '使用步驟',
-          step1: {
-            title: '上傳圖片',
-            desc: '選擇需要去背的圖片',
-          },
-          step2: {
-            title: 'AI 處理',
-            desc: '智能識別並移除背景',
-          },
-          step3: {
-            title: '下載結果',
-            desc: '下載去背後的圖片',
-          },
+        'hero.features': {
+          'privacy': '隱私安全',
+          'privacyDesc': '所有處理都在本地進行',
+          'fast': '快速高效',
+          'fastDesc': '即時處理，無需等待',
+          'free': '完全免費',
+          'freeDesc': '無限次使用',
         },
-        footer: {
-          copyright: '© 2024 AI 去背工具',
-          links: {
-            about: '關於我們',
-            privacy: '隱私政策',
-          },
+        'steps': {
+          'title': '使用步驟',
+          'step1.title': '上傳圖片',
+          'step1.desc': '選擇需要去背的圖片',
+          'step2.title': 'AI 處理',
+          'step2.desc': '智能識別並移除背景',
+          'step3.title': '下載結果',
+          'step3.desc': '下載去背後的圖片',
+        },
+        'footer': {
+          'copyright': '© 2024 AI 去背工具',
+          'links.about': '關於我們',
+          'links.privacy': '隱私政策',
         },
       };
 
       return (key: string) => {
-        const keys = key.split('.');
-        let value = messages[namespace];
-        for (const k of keys) {
-          if (value && typeof value === 'object') {
-            value = value[k];
-          }
-        }
-        return value || key;
+        const messages = allMessages[namespace];
+        return messages?.[key] || key;
       };
     },
   };

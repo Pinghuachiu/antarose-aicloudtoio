@@ -1,7 +1,6 @@
 'use client';
 
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import { type Locale, locales, localeNames, localeFlags } from '@/locales';
 import {
   Select,
@@ -16,7 +15,6 @@ export function LanguageSwitcher() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
-  const t = useTranslations('common');
 
   const currentLocale = (params.locale as Locale) || 'zh-tw';
 
