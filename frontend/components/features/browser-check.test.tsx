@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render } from '@testing-library/react';
 import { BrowserCheck } from './browser-check';
 import { NextIntlClientProvider } from 'next-intl';
 
@@ -9,6 +9,12 @@ const messages = {
     compatible: 'Your browser is compatible',
     notCompatible: 'Your browser is not compatible',
     recommendation: 'Please use Chrome, Edge, or Safari',
+    unsupported: 'Unsupported browser',
+    requireWebGL: 'Requires WebGL support',
+    recommendBrowsers: 'We recommend using Chrome, Edge, or Firefox',
+    downloadChrome: 'Download Chrome',
+    downloadEdge: 'Download Edge',
+    downloadFirefox: 'Download Firefox',
   },
 };
 

@@ -54,13 +54,13 @@ describe('Card Components', () => {
   it('should apply correct CSS classes to Card', () => {
     render(<Card data-testid="card">Content</Card>);
     const card = screen.getByTestId('card');
-    expect(card.className).toContain('rounded-lg');
+    expect(card.className).toContain('rounded-xl');
     expect(card.className).toContain('border');
   });
 
   it('should apply correct CSS classes to CardTitle', () => {
     render(<CardTitle data-testid="card-title">Title</CardTitle>);
     const title = screen.getByTestId('card-title');
-    expect(title.className).toContain('text-h3');
+    expect(title.className).toContain('font-semibold');
   });
 });

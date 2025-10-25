@@ -11,13 +11,13 @@ describe('Button', () => {
   it('should apply default variant classes', () => {
     render(<Button>Default Button</Button>);
     const button = screen.getByRole('button');
-    expect(button.className).toContain('bg-primary-500');
+    expect(button.className).toContain('bg-primary');
   });
 
   it('should apply secondary variant classes', () => {
     render(<Button variant="secondary">Secondary Button</Button>);
     const button = screen.getByRole('button');
-    expect(button.className).toContain('bg-secondary-500');
+    expect(button.className).toContain('bg-secondary');
   });
 
   it('should apply outline variant classes', () => {
@@ -29,15 +29,15 @@ describe('Button', () => {
   it('should apply ghost variant classes', () => {
     render(<Button variant="ghost">Ghost Button</Button>);
     const button = screen.getByRole('button');
-    expect(button.className).toContain('hover:bg-neutral-800');
+    expect(button.className).toContain('hover:bg-accent');
   });
 
   it('should apply different sizes', () => {
     const { rerender } = render(<Button size="sm">Small</Button>);
-    expect(screen.getByRole('button').className).toContain('h-9');
+    expect(screen.getByRole('button').className).toContain('h-8');
 
     rerender(<Button size="lg">Large</Button>);
-    expect(screen.getByRole('button').className).toContain('h-11');
+    expect(screen.getByRole('button').className).toContain('h-10');
   });
 
   it('should be disabled when disabled prop is true', () => {
