@@ -668,11 +668,34 @@ If irrelevant files are found in commits:
 3. **Issue Reporting**
    - Notify frontend engineers when style issues are found
 
+### SEO Engineer Responsibilities (Assigned by CTO)
+
+**Lily** is responsible for:
+
+1. **Technical SEO Audits**
+   - Conduct comprehensive SEO audits for all deployments
+   - Use chrome-devtools (MCP) and playwright (MCP) for testing
+   - Analyze meta tags, structured data, and on-page elements
+
+2. **Multilingual SEO Validation**
+   - Verify hreflang tags for all language versions (zh-tw, en, zh-cn, ja)
+   - Check language-specific meta tags (title, description, keywords)
+   - Validate URL structure and language routing
+
+3. **Performance & Core Web Vitals**
+   - Monitor LCP, FID, CLS metrics
+   - Identify SEO-related performance issues
+   - Recommend optimizations
+
+4. **Issue Reporting**
+   - Notify frontend engineers when SEO issues are found
+   - Provide specific implementation guidance
+
 ### MANDATORY: Standard Development Flow Checkpoints
 
 **CRITICAL**: CTO MUST enforce the following checkpoints IN ORDER. NEVER skip any checkpoint.
 
-**Project Execution Flow**: SpecKit/OpenSpec → Development → Code Review → Unit Testing → Style Validation → QA Testing (Local + Online) → CTO Acceptance
+**Project Execution Flow**: SpecKit/OpenSpec → Development → Code Review → Unit Testing → Style & SEO Validation → QA Testing (Local + Online) → CTO Acceptance
 
 ---
 
@@ -717,16 +740,28 @@ If irrelevant files are found in commits:
 
 ---
 
-#### **Checkpoint 4: Style Validation (MANDATORY for Frontend)**
+#### **Checkpoint 4: Style & SEO Validation (MANDATORY for Frontend)**
 
-**Lisa MUST:**
+**Lisa MUST (Style Validation):**
 - Validate UI against `design-system.md`
 - Check color, typography, spacing, components
 - Notify frontend developers when style issues found
 
+**Lily MUST (SEO Validation):**
+- Conduct SEO audit using chrome-devtools (MCP) or playwright (MCP)
+- Verify meta tags (title, description, keywords) for ALL language versions
+- Check hreflang tags and multilingual SEO configuration
+- Validate structured data (Schema.org JSON-LD)
+- Verify Open Graph and Twitter Card tags
+- Check Core Web Vitals readiness (LCP, FID, CLS optimization)
+- Validate canonical tags and URL structure
+- Notify frontend developers when SEO issues found
+
 **CTO Enforcement:**
 - ❌ **NEVER skip Style Validation for frontend work**
-- ⏸️ **STOP if issues found** → Frontend developers fix → Re-validate
+- ❌ **NEVER skip SEO Validation for frontend work**
+- ⏸️ **STOP if issues found** → Frontend developers fix → Re-validate (both Lisa and Lily)
+- ✅ **Lisa and Lily can work in PARALLEL** to save time
 
 ---
 
@@ -762,7 +797,8 @@ If irrelevant files are found in commits:
 - ✅ All checkpoints 1-5 completed
 - ✅ All tests passed (unit + E2E)
 - ✅ Code Review approved
-- ✅ Style Validation approved (frontend)
+- ✅ Style Validation approved (frontend - Lisa)
+- ✅ SEO Validation approved (frontend - Lily)
 - ✅ QA Testing passed (local + online)
 - ✅ No Critical or High severity bugs
 - ✅ All documentation updated
@@ -781,8 +817,9 @@ If irrelevant files are found in commits:
 - ❌ **NEVER skip any checkpoint** (even if time-pressured)
 - ❌ **NEVER accept "直接部署測試"** without completing all checkpoints
 - ❌ **NEVER let developers skip unit tests or code review**
+- ❌ **NEVER skip SEO Validation for frontend work** (Lily must review)
 - ⏸️ **ALWAYS STOP at each checkpoint** if issues found
-- ✅ **ALWAYS enforce the complete flow**: Development → Code Review → Unit Testing → Style Validation → QA (Local) → Deploy to Dev → QA (Online) → CTO Acceptance
+- ✅ **ALWAYS enforce the complete flow**: Development → Code Review → Unit Testing → Style & SEO Validation → QA (Local) → Deploy to Dev → QA (Online) → CTO Acceptance
 
 **Violation Handling:**
 - If CTO skips checkpoints → Self-correction required
@@ -802,6 +839,7 @@ If irrelevant files are found in commits:
 | Code Review Issues | Original Developer | Code Reviewer notifies |
 | Unit Test Failures | Original Developer | Developer self-corrects |
 | Style Validation Issues | Frontend Developer | Lisa notifies |
+| SEO Validation Issues | Frontend Developer | Lily notifies |
 | QA E2E Test Bugs (Backend) | Sharon | QA Team notifies |
 | QA E2E Test Bugs (Frontend) | Mark | QA Team notifies |
 
