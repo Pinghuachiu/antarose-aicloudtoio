@@ -11,16 +11,14 @@ import * as ort from 'onnxruntime-web';
  */
 export async function initializeONNXRuntime() {
   try {
-    // 設定執行環境為 WebGL（GPU 加速）
+    // 設定 WASM 檔案路徑（從 public/onnx 目錄載入）
+    ort.env.wasm.wasmPaths = '/onnx/';
+
+    // 設定執行環境為 WASM
     ort.env.wasm.numThreads = 1;
     ort.env.wasm.simd = true;
 
-    // 使用 WebGL backend
-    ort.env.webgl.contextId = 'webgl2';
-    ort.env.webgl.matmulMaxBatchSize = 16;
-    ort.env.webgl.pack = true;
-
-    console.log('[ONNX Runtime] 初始化成功，使用 WebGL backend');
+    console.log('[ONNX Runtime] 初始化成功，WASM 路徑已設定');
     return true;
   } catch (error) {
     console.error('[ONNX Runtime] 初始化失敗:', error);
@@ -36,7 +34,7 @@ export async function initializeONNXRuntime() {
 export async function loadModel(modelPath: string): Promise<ort.InferenceSession | null> {
   try {
     const session = await ort.InferenceSession.create(modelPath, {
-      executionProviders: ['webgl'], // 使用 WebGL backend
+      executionProviders: ['webgl', 'wasm'], // WebGL 優先（GPU 加速），WASM 降級
       graphOptimizationLevel: 'all',
     });
 
