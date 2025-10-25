@@ -140,10 +140,44 @@ export function UploadSection() {
     (format: 'png' | 'jpg') => {
       if (!processedImage) return;
 
-      const link = document.createElement('a');
-      link.href = processedImage;
-      link.download = `background-removed.${format}`;
-      link.click();
+      let downloadUrl = processedImage;
+
+      // 如果是 JPG 格式，需要加上白色背景
+      if (format === 'jpg') {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d')!;
+
+          // 填充白色背景
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // 繪製去背圖片
+          ctx.drawImage(img, 0, 0);
+
+          // 下載 JPG（白底）
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `background-removed.${format}`;
+              link.click();
+              URL.revokeObjectURL(url);
+            }
+          }, 'image/jpeg', 0.95);
+        };
+        img.src = processedImage;
+      } else {
+        // PNG 格式直接下載（保留透明）
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `background-removed.${format}`;
+        link.click();
+      }
     },
     [processedImage]
   );
