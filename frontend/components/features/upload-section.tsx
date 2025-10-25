@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { UploadCard } from './upload-card';
 import { PreviewCanvas } from './preview-canvas';
 import { useToast } from '@/hooks/use-toast';
+import { saveAs } from 'file-saver';
 import {
   initializeModel,
   removeBackground,
@@ -135,7 +136,7 @@ export function UploadSection() {
     [toast, initModel]
   );
 
-  // 下載圖片
+  // 下載圖片（使用 FileSaver.js）
   const handleDownload = useCallback(
     (format: 'png' | 'jpg') => {
       if (!processedImage) return;
@@ -156,25 +157,22 @@ export function UploadSection() {
           // 繪製去背圖片
           ctx.drawImage(img, 0, 0);
 
-          // 下載 JPG（白底）
+          // 下載 JPG（使用 FileSaver）
           canvas.toBlob((blob) => {
             if (blob) {
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = `background-removed.${format}`;
-              link.click();
-              URL.revokeObjectURL(url);
+              saveAs(blob, `background-removed.jpg`);
             }
           }, 'image/jpeg', 0.95);
         };
         img.src = processedImage;
       } else {
-        // PNG 格式直接下載（保留透明）
-        const link = document.createElement('a');
-        link.href = processedImage;
-        link.download = `background-removed.${format}`;
-        link.click();
+        // PNG 格式下載（使用 FileSaver）
+        // 將 data URL 轉為 blob
+        fetch(processedImage)
+          .then((res) => res.blob())
+          .then((blob) => {
+            saveAs(blob, `background-removed.png`);
+          });
       }
     },
     [processedImage]
