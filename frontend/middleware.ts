@@ -11,15 +11,16 @@ export default createMiddleware({
   // 不使用瀏覽器自動偵測（避免誤判）
   localeDetection: false,
 
-  // URL 策略
-  localePrefix: 'as-needed', // 預設語言不顯示前綴 /zh-tw
+  // URL 策略 - 預設語言也需要前綴
+  localePrefix: 'always',
 });
 
 export const config = {
-  // 匹配所有路徑，除了 API、靜態檔案、模型檔案
+  // 匹配所有路徑，除了 API、靜態檔案、圖片、模型檔案
   matcher: [
+    // 匹配所有路徑
     '/((?!api|_next|_vercel|.*\\..*).*)',
-    '/',
-    '/(zh-tw|en|zh-cn|ja)/:path*',
+    // 匹配語言前綴路徑
+    '/(zh-tw|en|zh-cn|ja)/:path*'
   ],
 };
