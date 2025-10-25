@@ -140,8 +140,6 @@ export function UploadSection() {
     (format: 'png' | 'jpg') => {
       if (!processedImage) return;
 
-      let downloadUrl = processedImage;
-
       // 如果是 JPG 格式，需要加上白色背景
       if (format === 'jpg') {
         const img = new Image();
@@ -174,7 +172,7 @@ export function UploadSection() {
       } else {
         // PNG 格式直接下載（保留透明）
         const link = document.createElement('a');
-        link.href = downloadUrl;
+        link.href = processedImage;
         link.download = `background-removed.${format}`;
         link.click();
       }
