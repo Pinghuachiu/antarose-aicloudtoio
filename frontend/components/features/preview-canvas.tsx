@@ -52,7 +52,7 @@ export function PreviewCanvas({
               <img
                 src={originalImage}
                 alt={t('original')}
-                className="w-full h-full object-contain"
+                className="h-full w-auto object-contain"
                 loading="lazy"
                 decoding="async"
               />
