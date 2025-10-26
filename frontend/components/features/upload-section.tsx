@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react';
 import { UploadCard } from './upload-card';
 import { PreviewCanvas } from './preview-canvas';
 import { useToast } from '@/hooks/use-toast';
-import { saveAs } from 'file-saver';
 import {
   initializeModel,
   removeBackground,
@@ -136,10 +135,14 @@ export function UploadSection() {
     [toast, initModel]
   );
 
-  // 下載圖片（使用 FileSaver.js）
+  // 下載圖片（使用原生下載方式）
   const handleDownload = useCallback(
     (format: 'png' | 'jpg') => {
       if (!processedImage) return;
+
+      // 生成檔名（使用時間戳記）
+      const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '');
+      const fileName = `removed-bg-${timestamp}.${format}`;
 
       // 如果是 JPG 格式，需要加上白色背景
       if (format === 'jpg') {
@@ -157,21 +160,31 @@ export function UploadSection() {
           // 繪製去背圖片
           ctx.drawImage(img, 0, 0);
 
-          // 下載 JPG（使用 FileSaver）
+          // 下載 JPG
           canvas.toBlob((blob) => {
             if (blob) {
-              saveAs(blob, `background-removed.jpg`);
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = fileName;
+              link.click();
+              URL.revokeObjectURL(url);
             }
           }, 'image/jpeg', 0.95);
         };
         img.src = processedImage;
       } else {
-        // PNG 格式下載（使用 FileSaver）
+        // PNG 格式下載
         // 將 data URL 轉為 blob
         fetch(processedImage)
           .then((res) => res.blob())
           .then((blob) => {
-            saveAs(blob, `background-removed.png`);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.click();
+            URL.revokeObjectURL(url);
           });
       }
     },
