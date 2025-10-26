@@ -34,25 +34,35 @@ export function PreviewCanvas({
       <CardContent className="p-0">
         {/* 使用 ReactCompareImage（參考 image-matting） */}
         <div
-          className="relative aspect-square overflow-hidden"
+          className="relative overflow-hidden mx-auto bg-black"
           style={{
-            background: 'repeating-conic-gradient(#808080 0% 25%, #ffffff 0% 50%) 50% / 20px 20px',
+            maxHeight: '80vh',
+            maxWidth: '600px',
           }}
         >
           {processedImage ? (
-            <ReactCompareImage
-              leftImage={originalImage}
-              rightImage={processedImage}
-              sliderLineWidth={4}
-              sliderLineColor="#0070f3"
-            />
+            <div
+              style={{
+                position: 'relative',
+                background: 'repeating-conic-gradient(#808080 0% 25%, #ffffff 0% 50%) 50% / 20px 20px',
+              }}
+            >
+              <ReactCompareImage
+                leftImage={originalImage}
+                rightImage={processedImage}
+                leftImageCss={{ width: '100%', objectFit: 'contain', display: 'block' }}
+                rightImageCss={{ width: '100%', objectFit: 'contain', display: 'block' }}
+                sliderLineWidth={4}
+                sliderLineColor="#0070f3"
+              />
+            </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={originalImage}
                 alt={t('original')}
-                className="w-full h-full object-contain"
+                className="h-full w-auto object-contain"
                 loading="lazy"
                 decoding="async"
               />

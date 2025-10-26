@@ -1,6 +1,5 @@
 'use client';
 
-import { useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,6 @@ type UploadCardProps = {
 
 export function UploadCard({ onFileSelect, disabled = false }: UploadCardProps) {
   const t = useTranslations('upload');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -66,18 +64,24 @@ export function UploadCard({ onFileSelect, disabled = false }: UploadCardProps) 
             {t('or')}
           </p>
 
-          {/* 上傳按鈕 */}
+          {/* 上傳按鈕 - file input 放在 label 內部 */}
           <Button
             variant="default"
             size="lg"
             disabled={disabled}
             className="mb-4"
-            onClick={(e) => {
-              e.stopPropagation();
-              fileInputRef.current?.click();
-            }}
+            asChild
           >
-            {t('selectFile')}
+            <label className="cursor-pointer">
+              {t('selectFile')}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleFileInput}
+                disabled={disabled}
+              />
+            </label>
           </Button>
 
           {/* 檔案限制提示 */}
@@ -85,16 +89,6 @@ export function UploadCard({ onFileSelect, disabled = false }: UploadCardProps) 
             <p className="text-caption text-neutral-500">{t('supportedFormats')}</p>
             <p className="text-caption text-neutral-500">{t('maxSize')}</p>
           </div>
-
-          {/* 隱藏的檔案輸入 */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={handleFileInput}
-            disabled={disabled}
-          />
         </div>
       </CardContent>
     </Card>
