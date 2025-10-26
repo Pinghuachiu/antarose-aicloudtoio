@@ -9,6 +9,7 @@ import {
   removeBackground,
   checkWebGPUSupport,
 } from '@/lib/ai/transformers-bg-removal';
+import { saveImage, getImage, deleteImage } from '@/lib/storage/indexeddb';
 
 export function UploadSection() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -17,29 +18,43 @@ export function UploadSection() {
   const [modelReady, setModelReady] = useState(false);
   const { toast } = useToast();
 
-  // 從 sessionStorage 恢復狀態（切換語言時保留處理結果）
+  // 從 IndexedDB 恢復狀態（切換語言時保留處理結果）
   useEffect(() => {
-    const savedOriginal = sessionStorage.getItem('upload-original-image');
-    const savedProcessed = sessionStorage.getItem('upload-processed-image');
+    const loadImages = async () => {
+      try {
+        const [savedOriginal, savedProcessed] = await Promise.all([
+          getImage('upload-original-image'),
+          getImage('upload-processed-image'),
+        ]);
 
-    if (savedOriginal) setOriginalImage(savedOriginal);
-    if (savedProcessed) setProcessedImage(savedProcessed);
+        if (savedOriginal) setOriginalImage(savedOriginal);
+        if (savedProcessed) setProcessedImage(savedProcessed);
+      } catch (error) {
+        console.error('[IndexedDB] 載入圖片失敗:', error);
+      }
+    };
+
+    loadImages();
   }, []);
 
-  // 儲存狀態到 sessionStorage
+  // 儲存狀態到 IndexedDB
   useEffect(() => {
     if (originalImage) {
-      sessionStorage.setItem('upload-original-image', originalImage);
+      saveImage('upload-original-image', originalImage).catch((error) => {
+        console.error('[IndexedDB] 儲存原圖失敗:', error);
+      });
     } else {
-      sessionStorage.removeItem('upload-original-image');
+      deleteImage('upload-original-image').catch(console.error);
     }
   }, [originalImage]);
 
   useEffect(() => {
     if (processedImage) {
-      sessionStorage.setItem('upload-processed-image', processedImage);
+      saveImage('upload-processed-image', processedImage).catch((error) => {
+        console.error('[IndexedDB] 儲存去背圖失敗:', error);
+      });
     } else {
-      sessionStorage.removeItem('upload-processed-image');
+      deleteImage('upload-processed-image').catch(console.error);
     }
   }, [processedImage]);
 
@@ -222,9 +237,9 @@ export function UploadSection() {
     setOriginalImage(null);
     setProcessedImage(null);
     setIsProcessing(false);
-    // 清除 sessionStorage
-    sessionStorage.removeItem('upload-original-image');
-    sessionStorage.removeItem('upload-processed-image');
+    // 清除 IndexedDB
+    deleteImage('upload-original-image').catch(console.error);
+    deleteImage('upload-processed-image').catch(console.error);
   }, []);
 
   return (
