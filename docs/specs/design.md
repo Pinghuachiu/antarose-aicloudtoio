@@ -1,1044 +1,1533 @@
-# OpenSpec Design - ai.cloudto.io 技術設計文件
+# 技術設計文檔 - CloudTools AI 工具平台
 
-**設計編號：** AICLOUD-DESIGN-001
-**設計日期：** 2025-10-25
-**設計人員：** CTO + Leo（系統架構師）
-**基於 Proposal：** AICLOUD-001（已批准）
-**狀態：** ⏳ 待 CTO 批准
-
----
-
-## 一、設計概述
-
-### 1.1 設計目標
-
-基於已批准的 Proposal，本設計文件詳細說明 ai.cloudto.io 的技術實作細節。
-
-**核心目標：**
-1. 客戶端 WebGL AI 去背（隱私保護）
-2. 多語系支援（繁中/簡中/英文/日文）
-3. VPS + Express + Cloudflare 架構
-4. Dev/Prod 環境分離
-5. 保留未來擴展能力
-
-### 1.2 架構評分
-
-- Leo 系統架構師評分：**9.0/10**（A+ 級）
-- 評級：優秀++
-- 決策：✅ 批准進入實作
+**版本**: 1.0
+**日期**: 2025-10-26
+**狀態**: 待 CTO 審核
+**專案**: CloudTools AI 工具平台 (tools.cloudto.io)
 
 ---
 
-## 二、系統架構設計
+## 1. 系統架構設計
 
-### 2.1 整體架構圖
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         使用者瀏覽器                          │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Next.js 15 UI (多語系)                               │  │
-│  │  ┌────────────────────────────────────────────────┐  │  │
-│  │  │  WebGL Runtime (onnxruntime-web)               │  │  │
-│  │  │  ↓                                              │  │  │
-│  │  │  ONNX 模型（U²Net Lite）                       │  │  │
-│  │  │  ↓                                              │  │  │
-│  │  │  去背處理（100% 客戶端）                       │  │  │
-│  │  └────────────────────────────────────────────────┘  │  │
-│  └──────────────────────────────────────────────────────┘  │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ (HTTPS)
-                        ↓
-┌─────────────────────────────────────────────────────────────┐
-│              Cloudflare CDN + Proxy + WAF                   │
-│  - SSL/TLS 終止（Flexible SSL）                             │
-│  - CDN 靜態資源快取                                         │
-│  - DDoS Protection                                          │
-│  - Bot Fight Mode                                           │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ (HTTP)
-                        ↓
-┌─────────────────────────────────────────────────────────────┐
-│          🛡️ IP 鎖定層（僅允許 Cloudflare IP）               │
-└───────────────────────┬─────────────────────────────────────┘
-                        │
-                        ↓
-┌─────────────────────────────────────────────────────────────┐
-│  VPS (165.154.226.78) - Ubuntu 22.04 / 2C 4GB               │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  Nginx (Reverse Proxy)                                │  │
-│  │  - Dev: dev-ai.cloudto.io → localhost:3001           │  │
-│  │  - Prod: ai.cloudto.io → localhost:3000              │  │
-│  └─────────────────┬─────────────────────────────────────┘  │
-│                    │                                         │
-│  ┌─────────────────┴─────────────────┐                     │
-│  │  PM2 (Process Manager)             │                     │
-│  │  ┌─────────────────────────────┐  │                     │
-│  │  │ ai-cloudto-io-dev (port 3001)│  │                     │
-│  │  │ instances: 1                 │  │                     │
-│  │  └─────────────────────────────┘  │                     │
-│  │  ┌─────────────────────────────┐  │                     │
-│  │  │ ai-cloudto-io-prd (port 3000)│  │                     │
-│  │  │ instances: 2 (cluster mode)  │  │                     │
-│  │  └─────────────────────────────┘  │                     │
-│  └───────────────┬───────────────────┘                     │
-│                  │                                           │
-│  ┌───────────────┴───────────────┐                         │
-│  │  Express 5.1.0 (Node.js 20)   │                         │
-│  │  - /health                    │                         │
-│  │  - /api/version               │                         │
-│  │  - Logging Middleware         │                         │
-│  │  - Helmet (Security)          │                         │
-│  │  - CORS + Compression         │                         │
-│  │  - Next.js Static Files       │                         │
-│  └───────────────────────────────┘                         │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 2.2 資料流向圖
-
-#### 靜態資源載入流程
+### 1.1 整體架構
 
 ```
-使用者瀏覽器
-    ↓ GET /
-Cloudflare Edge (檢查快取)
-    ├─ 快取命中 → 直接返回（CDN）
-    └─ 快取未命中
-        ↓
-    VPS Nginx → Express → Next.js HTML
-        ↓
-    返回 HTML
-        ↓
-Cloudflare (快取 HTML)
-    ↓
-使用者瀏覽器
+┌─────────────────────────────────────────────────────────┐
+│                     Cloudflare CDN                      │
+│              (Edge Cache + SSL + DDoS)                  │
+└───────────────────┬─────────────────────────────────────┘
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+┌───────▼──────┐      ┌────────▼────────┐
+│ Dev Environment│      │ Prd Environment │
+│ devtools.     │      │ tools.          │
+│ cloudto.io    │      │ cloudto.io      │
+│ (develop)     │      │ (master)        │
+└───────┬──────┘      └────────┬────────┘
+        │                      │
+        └──────────┬───────────┘
+                   │
+        ┌──────────▼──────────┐
+        │   Next.js 15 App    │
+        │   (App Router)      │
+        ├─────────────────────┤
+        │ - SSR + SSG         │
+        │ - ISR (60s)         │
+        │ - Edge Functions    │
+        └──────────┬──────────┘
+                   │
+        ┌──────────▼──────────┐
+        │  Frontend Stack     │
+        ├─────────────────────┤
+        │ - React 19 RC       │
+        │ - TypeScript 5.7    │
+        │ - Tailwind CSS 4    │
+        │ - Radix UI          │
+        │ - @dnd-kit/core     │
+        │ - Zustand 5         │
+        └─────────────────────┘
 ```
 
-#### AI 去背處理流程
+### 1.2 技術棧選型
 
-```
-使用者上傳圖片
-    ↓
-瀏覽器 File API
-    ↓
-載入 ONNX 模型（首次）
-    ├─ GET /models/u2net-lite.onnx
-    ├─ Cloudflare CDN (快取 1 年)
-    └─ 儲存到 Service Worker Cache
-    ↓
-WebGL Runtime 初始化
-    ↓
-圖片前處理（resize, normalize）
-    ↓
-ONNX Inference (WebGL backend)
-    ↓
-後處理（mask to RGBA）
-    ↓
-顯示結果
-    ↓
-使用者下載（瀏覽器本地）
-```
+**前端框架**:
+- **Next.js 15** (App Router) - SSR/SSG/ISR 支持
+- **React 19 RC** - 最新並發特性
+- **TypeScript 5.7** - 完整類型安全
 
-**關鍵特性：**
-- ✅ 圖片**從不**傳送到伺服器
-- ✅ 所有處理在瀏覽器 WebGL
-- ✅ 模型透過 Cloudflare CDN 快速載入
+**UI 與樣式**:
+- **Tailwind CSS 4** - Utility-first CSS
+- **Radix UI** - 無障礙組件庫
+- **Framer Motion** - 動畫效果
+- **Lucide React** - Icon 庫
+
+**狀態管理**:
+- **Zustand 5** - 輕量級全局狀態
+- **localStorage** - 持久化存儲
+
+**拖放功能**:
+- **@dnd-kit/core** - 核心拖放庫
+- **@dnd-kit/sortable** - 排序支持
+- **@dnd-kit/utilities** - 工具函數
+
+**國際化**:
+- **next-intl** - i18n 解決方案
+- 支持語言: zh-tw (預設), en, zh-cn, ja
+
+**部署與監控**:
+- **Nginx** - 反向代理（VPS: 165.154.226.78）
+- **PM2** - 進程管理與自動重啟
+- **Cloudflare CDN** - Edge Cache + SSL + DDoS 防護
+- **VPS** - Ubuntu 22.04 LTS (2 Core / 4 GB RAM)
 
 ---
 
-## 三、前端技術設計
+## 2. Next.js 路由架構
 
-### 3.1 Next.js 15 App Router 結構
+### 2.1 路由結構
 
 ```
 app/
-├── [locale]/                    # 多語系動態路由
-│   ├── layout.tsx              # 語言專屬 Layout
-│   │   └── 載入對應語言字體
-│   │   └── NextIntlClientProvider
-│   ├── page.tsx                # 首頁
-│   │   └── UploadCard
-│   │   └── Steps
-│   │   └── AdSense Banner
-│   ├── about/
-│   │   └── page.tsx            # 關於頁
-│   └── privacy/
-│       └── page.tsx            # 隱私政策
-├── layout.tsx                   # 根 Layout
-│   └── Google Fonts 載入
-│   └── Tailwind CSS
-│   └── Global Scripts
-├── not-found.tsx
-└── api/                         # API Routes（轉發到 Express）
+├── [locale]/                    # 語言路由
+│   ├── layout.tsx              # 語言層級 Layout
+│   ├── page.tsx                # 首頁 (自動重定向到 /removebg)
+│   ├── [tool]/                 # 動態工具路由
+│   │   ├── page.tsx            # 工具頁面
+│   │   └── layout.tsx          # 工具 Layout
+│   ├── not-found.tsx           # 客製化 404 (Coming Soon)
+│   └── middleware.ts           # 語言檢測與重定向
+├── api/                        # API Routes
+│   ├── removebg/route.ts       # 移除背景 API
+│   └── health/route.ts         # 健康檢查
+├── layout.tsx                  # Root Layout
+└── not-found.tsx               # 全局 404
 ```
 
-### 3.2 組件架構設計
+### 2.2 路由規則
 
-#### UploadCard 組件
-
-**檔案：** `components/ui/UploadCard.tsx`
-
-**功能：**
-- 拖曳上傳（Drag & Drop）
-- 點擊上傳（File Input）
-- 格式驗證（JPG/PNG/WebP）
-- 尺寸檢查（< 2048px）
-- 自動壓縮（超過限制）
-
-**技術細節：**
+**首頁重定向**:
 ```typescript
-interface UploadCardProps {
-  onImageSelect: (file: File) => void;
-  maxSize?: number; // 預設 2048
-  supportedFormats?: string[]; // 預設 ['image/jpeg', 'image/png', 'image/webp']
+// app/[locale]/page.tsx
+import { redirect } from 'next/navigation';
+
+export default function HomePage({ params }: { params: { locale: string } }) {
+  redirect(`/${params.locale}/removebg`);
 }
+```
 
-// 圖片壓縮邏輯
-async function compressImage(file: File, maxSize: number): Promise<File> {
-  const img = await createImageBitmap(file);
-  const canvas = document.createElement('canvas');
+**動態工具路由**:
+```typescript
+// app/[locale]/[tool]/page.tsx
+const AVAILABLE_TOOLS = ['removebg']; // 當前支持的工具
+const COMING_SOON_TOOLS = ['compress', 'crop', 'convert']; // 即將推出
 
-  // 計算縮放比例
-  let { width, height } = img;
-  if (width > maxSize || height > maxSize) {
-    const ratio = Math.min(maxSize / width, maxSize / height);
-    width *= ratio;
-    height *= ratio;
+export default function ToolPage({ params }: { params: { locale: string; tool: string } }) {
+  if (AVAILABLE_TOOLS.includes(params.tool)) {
+    return <ToolComponent tool={params.tool} />;
   }
 
-  canvas.width = width;
-  canvas.height = height;
-
-  const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(img, 0, 0, width, height);
-
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      resolve(new File([blob!], file.name, { type: file.type }));
-    }, file.type);
-  });
-}
-```
-
----
-
-#### PreviewCanvas 組件
-
-**檔案：** `components/ui/PreviewCanvas.tsx`
-
-**功能：**
-- 顯示原圖 vs 去背結果
-- 滑桿對比模式
-- 背景顏色切換
-- 縮放/拖曳
-
-**技術細節：**
-```typescript
-interface PreviewCanvasProps {
-  originalImage: HTMLImageElement;
-  processedImage: ImageData; // RGBA with alpha channel
-  backgroundColor?: string; // 預設 transparent
-}
-
-// Canvas 渲染邏輯
-function renderComposite(
-  ctx: CanvasRenderingContext2D,
-  original: HTMLImageElement,
-  mask: ImageData,
-  bgColor: string
-) {
-  // 1. 繪製背景
-  ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-  // 2. 繪製原圖（僅 mask 為 true 的區域）
-  ctx.putImageData(mask, 0, 0);
-}
-```
-
----
-
-#### BrowserCheck 組件
-
-**檔案：** `components/BrowserCheck.tsx`
-
-**功能：**
-- 檢測 WebGL 2.0 支援
-- 檢測 WASM 支援
-- 顯示不支援提示
-- 提供瀏覽器升級建議
-
-**檢測邏輯：**
-```typescript
-function detectWebGLSupport(): boolean {
-  try {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-    return !!gl;
-  } catch (e) {
-    return false;
+  if (COMING_SOON_TOOLS.includes(params.tool)) {
+    return <ComingSoonPage tool={params.tool} />;
   }
-}
 
-function detectWASMSupport(): boolean {
-  try {
-    return typeof WebAssembly === 'object'
-      && typeof WebAssembly.instantiate === 'function';
-  } catch (e) {
-    return false;
-  }
+  notFound(); // 觸發 404
 }
 ```
 
----
-
-### 3.3 ONNX Runtime 整合設計
-
-**檔案：** `lib/onnx-runtime.ts`
-
-**初始化配置：**
+**語言檢測與重定向**:
 ```typescript
-import * as ort from 'onnxruntime-web';
+// middleware.ts
+import { NextRequest, NextResponse } from 'next/server';
+import createMiddleware from 'next-intl/middleware';
 
-// WASM 檔案路徑配置
-ort.env.wasm.wasmPaths = '/wasm/';
-ort.env.wasm.numThreads = 4;
+const locales = ['zh-tw', 'en', 'zh-cn', 'ja'];
+const defaultLocale = 'zh-tw';
 
-// 建立 Session（WebGL 優先）
-const session = await ort.InferenceSession.create(
-  '/models/u2net-lite.onnx',
-  {
-    executionProviders: ['webgl', 'wasm'],
-    graphOptimizationLevel: 'all',
-    enableCpuMemArena: false, // 降低記憶體使用
-  }
-);
-```
-
-**推論流程：**
-```typescript
-async function removeBackground(imageElement: HTMLImageElement): Promise<ImageData> {
-  // 1. 前處理：轉換為模型輸入格式
-  const inputTensor = preprocessImage(imageElement);
-
-  // 2. ONNX 推論
-  const results = await session.run({ input: inputTensor });
-
-  // 3. 後處理：mask 轉 RGBA
-  const outputData = results.output.data;
-  const maskImage = postprocessMask(outputData, imageElement.width, imageElement.height);
-
-  return maskImage;
-}
-```
-
----
-
-### 3.4 多語系實作設計
-
-**配置檔案：**
-- `i18n.config.ts` - next-intl 主配置
-- `middleware.ts` - 語言路由處理
-- `locales/*.json` - 翻譯檔案（4 種語言）
-
-**語言選擇邏輯：**
-```typescript
-// 1. 檢查 URL 路徑
-// 2. 檢查 localStorage
-// 3. 預設繁體中文（不使用瀏覽器自動偵測）
-
-function getInitialLocale(): Locale {
-  // URL 優先
-  if (pathname.startsWith('/en')) return 'en';
-  if (pathname.startsWith('/zh-cn')) return 'zh-cn';
-  if (pathname.startsWith('/ja')) return 'ja';
-
-  // localStorage 次之
-  const saved = localStorage.getItem('locale');
-  if (saved && isValidLocale(saved)) return saved;
-
-  // 預設繁中
-  return 'zh-tw';
-}
-```
-
----
-
-## 四、後端技術設計
-
-### 4.1 Express Server 架構
-
-**檔案：** `backend/server.ts`
-
-**Middleware 堆疊：**
-```typescript
-import express from 'express';
-import helmet from 'helmet';
-import cors from 'cors';
-import compression from 'compression';
-import morgan from 'morgan';
-
-const app = express();
-
-// 1. 安全中間件
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", 'https://pagead2.googlesyndication.com'],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-      connectSrc: ["'self'"],
-      workerSrc: ["'self'", 'blob:'],
-    },
-  },
-}));
-
-// 2. CORS（允許同源）
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
-  credentials: true,
-}));
-
-// 3. 壓縮
-app.use(compression());
-
-// 4. 日誌記錄
-app.use(morgan(':date[iso] :method :url :status :res[content-length] - :response-time ms'));
-app.use(customLogger); // 自訂日誌
-
-// 5. 靜態檔案
-app.use(express.static('public', { maxAge: '1y' }));
-
-// 6. Next.js
-// 如使用 SSR: next.getRequestHandler()
-// 如使用 Static: express.static(nextBuildDir)
-```
-
----
-
-### 4.2 API Endpoints 設計
-
-#### `/health` - 健康檢查
-
-**用途：** 監控系統、負載平衡健康檢查
-
-**實作：**
-```typescript
-// backend/routes/health.ts
-import { Router } from 'express';
-
-const router = Router();
-
-router.get('/health', async (req, res) => {
-  const healthcheck = {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV,
-    memory: {
-      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-    },
-  };
-
-  res.status(200).json(healthcheck);
+export default createMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: 'always',
 });
 
-export default router;
-```
-
-**回應範例：**
-```json
-{
-  "status": "ok",
-  "timestamp": "2025-10-25T12:00:00.000Z",
-  "uptime": 123456,
-  "environment": "production",
-  "memory": {
-    "used": 150,
-    "total": 200
-  }
-}
-```
-
----
-
-#### `/api/version` - 版本資訊
-
-**用途：** 版本追蹤、除錯、變更記錄
-
-**實作：**
-```typescript
-// backend/routes/version.ts
-import { Router } from 'express';
-import { execSync } from 'child_process';
-
-const router = Router();
-
-router.get('/api/version', (req, res) => {
-  const version = {
-    app: process.env.APP_VERSION || '1.0.0',
-    commit: process.env.GIT_COMMIT || getGitCommit(),
-    buildTime: process.env.BUILD_TIME || new Date().toISOString(),
-    node: process.version,
-    environment: process.env.NODE_ENV,
-  };
-
-  res.json(version);
-});
-
-function getGitCommit(): string {
-  try {
-    return execSync('git rev-parse --short HEAD').toString().trim();
-  } catch {
-    return 'unknown';
-  }
-}
-
-export default router;
-```
-
----
-
-### 4.3 日誌系統設計
-
-**日誌記錄項目：**
-- 訪問時間（ISO 8601）
-- HTTP 方法和路徑
-- User-Agent（瀏覽器資訊）
-- Referrer（來源）
-- 回應狀態碼
-- 回應時間
-
-**實作：**
-```typescript
-// backend/middlewares/logging.ts
-import winston from 'winston';
-
-const logger = winston.createLogger({
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({ filename: 'logs/access.log' }),
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-  ],
-});
-
-export function customLogger(req, res, next) {
-  const start = Date.now();
-
-  res.on('finish', () => {
-    logger.info({
-      timestamp: new Date().toISOString(),
-      method: req.method,
-      url: req.url,
-      status: res.statusCode,
-      userAgent: req.headers['user-agent'],
-      referrer: req.headers['referer'] || 'Direct',
-      responseTime: Date.now() - start,
-      ip: req.headers['cf-connecting-ip'] || req.ip, // Cloudflare 真實 IP
-    });
-  });
-
-  next();
-}
-```
-
----
-
-## 五、資料庫設計（v1.2 規劃）
-
-### 5.1 Schema 設計（PostgreSQL）
-
-**Users Table：**
-```sql
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-**Image History Table：**
-```sql
-CREATE TABLE image_history (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id),
-  original_filename VARCHAR(255),
-  processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  metadata JSONB -- 圖片尺寸、處理時間等
-);
-```
-
-**注意：** v1.0/v1.1 不實作資料庫，保留架構設計供未來參考。
-
----
-
-## 六、安全設計
-
-### 6.1 多層安全防護
-
-```
-┌─────────────────────────────────────────────────┐
-│  Layer 1: Cloudflare WAF + DDoS Protection     │
-│  - 阻擋惡意請求                                  │
-│  - 防止 DDoS 攻擊                               │
-│  - Bot Fight Mode                               │
-└────────────────────┬────────────────────────────┘
-                     │
-┌────────────────────┴────────────────────────────┐
-│  Layer 2: Cloudflare SSL (Flexible)            │
-│  - HTTPS 加密（用戶 ↔ Cloudflare）              │
-│  - SSL 證書驗證                                 │
-└────────────────────┬────────────────────────────┘
-                     │ (HTTP)
-┌────────────────────┴────────────────────────────┐
-│  Layer 3: IP 鎖定（關鍵安全層）✅               │
-│  - 僅允許 Cloudflare IP 範圍                    │
-│  - 防止繞過 Cloudflare 攻擊                     │
-│  - 補償 Flexible SSL 風險                       │
-└────────────────────┬────────────────────────────┘
-                     │
-┌────────────────────┴────────────────────────────┐
-│  Layer 4: Nginx 安全配置                        │
-│  - client_max_body_size 限制                    │
-│  - Rate limiting                                │
-└────────────────────┬────────────────────────────┘
-                     │
-┌────────────────────┴────────────────────────────┐
-│  Layer 5: Express Helmet                        │
-│  - CSP (Content Security Policy)                │
-│  - X-Frame-Options (防 Clickjacking)            │
-│  - X-Content-Type-Options (防 MIME Sniffing)    │
-└─────────────────────────────────────────────────┘
-```
-
-**Leo 評價：** ✅ **五層安全防護，達商業級標準**
-
-### 6.2 IP 鎖定配置（已實作）
-
-**維護清單：**
-- [ ] 每月檢查 Cloudflare IP 範圍更新（<https://www.cloudflare.com/ips/>）
-- [ ] 設定自動化更新腳本（cron job）
-- [ ] 測試 IP 鎖定有效性
-
----
-
-## 七、部署設計
-
-### 7.1 環境配置
-
-| 環境 | Domain | Port | Directory | PM2 Instance | Instances |
-|------|--------|------|-----------|--------------|-----------|
-| Development | dev-ai.cloudto.io | 3001 | /var/www/ai-cloudto-io-dev | ai-cloudto-io-dev | 1 |
-| Production | ai.cloudto.io | 3000 | /var/www/ai-cloudto-io-prd | ai-cloudto-io-prd | 2 (cluster) |
-
-### 7.2 PM2 配置設計
-
-**檔案：** `ecosystem.config.js`
-
-```javascript
-module.exports = {
-  apps: [
-    // Development
-    {
-      name: 'ai-cloudto-io-dev',
-      script: 'backend/server.js',
-      cwd: '/var/www/ai-cloudto-io-dev',
-      env: {
-        NODE_ENV: 'development',
-        PORT: 3001,
-      },
-      instances: 1,
-      exec_mode: 'fork',
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '500M',
-      error_file: 'logs/dev-error.log',
-      out_file: 'logs/dev-out.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-    },
-
-    // Production
-    {
-      name: 'ai-cloudto-io-prd',
-      script: 'backend/server.js',
-      cwd: '/var/www/ai-cloudto-io-prd',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3000,
-      },
-      instances: 2, // Cluster mode（充分利用 2 核心）
-      exec_mode: 'cluster',
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '1G',
-      error_file: 'logs/prd-error.log',
-      out_file: 'logs/prd-out.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      // Graceful shutdown
-      kill_timeout: 5000,
-      listen_timeout: 3000,
-    },
-  ],
+export const config = {
+  matcher: ['/', '/(zh-tw|en|zh-cn|ja)/:path*'],
 };
 ```
 
-### 7.3 Nginx 配置設計
+### 2.3 404 頁面設計
 
-**Development 配置：**
-
-```nginx
-# /etc/nginx/sites-available/ai-cloudto-io-dev
-upstream dev_backend {
-    server 127.0.0.1:3001;
-    keepalive 32;
-}
-
-server {
-    listen 80;
-    server_name dev-ai.cloudto.io;
-
-    # 限制請求大小
-    client_max_body_size 10M;
-
-    # Rate limiting（防止濫用）
-    limit_req_zone $binary_remote_addr zone=dev_limit:10m rate=10r/s;
-    limit_req zone=dev_limit burst=20 nodelay;
-
-    # 主要代理
-    location / {
-        proxy_pass http://dev_backend;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-
-        # Timeout 設定
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
-
-    # ONNX 模型檔案（長期快取）
-    location /models/ {
-        proxy_pass http://dev_backend;
-        proxy_cache_valid 200 365d;
-        add_header Cache-Control "public, max-age=31536000, immutable";
-        add_header Access-Control-Allow-Origin "*";
-    }
-
-    # WASM 檔案（長期快取）
-    location /wasm/ {
-        proxy_pass http://dev_backend;
-        proxy_cache_valid 200 365d;
-        add_header Cache-Control "public, max-age=31536000, immutable";
-        add_header Access-Control-Allow-Origin "*";
-    }
-
-    # API 不快取
-    location /api/ {
-        proxy_pass http://dev_backend;
-        add_header Cache-Control "no-cache, no-store, must-revalidate";
-    }
-}
-```
-
-**Production 配置：** 類似，但指向 port 3000
-
----
-
-## 八、效能優化設計
-
-### 8.1 Cloudflare 快取策略
-
-**Page Rules 配置：**
-
-| URL Pattern | Cache Level | Cache TTL | Browser TTL |
-|-------------|-------------|-----------|-------------|
-| `ai.cloudto.io/models/*` | Cache Everything | 1 year | 1 year |
-| `ai.cloudto.io/wasm/*` | Cache Everything | 1 year | 1 year |
-| `ai.cloudto.io/_next/static/*` | Cache Everything | 1 year | 1 year |
-| `ai.cloudto.io/api/*` | Bypass | - | - |
-| `ai.cloudto.io/*` | Standard | 2 hours | 30 minutes |
-
-### 8.2 Service Worker 快取策略
-
-**檔案：** `public/sw.js`
-
-```javascript
-const CACHE_VERSION = 'v1.0.0';
-const STATIC_CACHE = `static-${CACHE_VERSION}`;
-const MODELS_CACHE = `models-${CACHE_VERSION}`;
-
-const STATIC_ASSETS = [
-  '/',
-  '/en',
-  '/zh-cn',
-  '/ja',
-  '/_next/static/css/*',
-  '/_next/static/js/*',
-];
-
-const MODEL_ASSETS = [
-  '/models/u2net-lite.onnx',
-  '/wasm/ort-wasm-simd.wasm',
-  '/wasm/ort-wasm-threaded.wasm',
-];
-
-// Install: 預快取關鍵資源
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    Promise.all([
-      caches.open(STATIC_CACHE).then(cache => cache.addAll(STATIC_ASSETS)),
-      caches.open(MODELS_CACHE).then(cache => cache.addAll(MODEL_ASSETS)),
-    ])
+**客製化 Coming Soon 404**:
+```typescript
+// app/[locale]/not-found.tsx
+export default function NotFoundPage() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <h1 className="text-4xl font-bold mb-4">🚧 Coming Soon</h1>
+      <p className="text-lg text-gray-600 mb-8">
+        這個工具即將推出，敬請期待！
+      </p>
+      <Link href="/removebg" className="btn-primary">
+        返回移除背景工具
+      </Link>
+    </div>
   );
-});
+}
+```
 
-// Fetch: Cache-First for models, Network-First for pages
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
+---
 
-  // ONNX 模型和 WASM：Cache First
-  if (request.url.includes('/models/') || request.url.includes('/wasm/')) {
-    event.respondWith(
-      caches.match(request).then(response => response || fetch(request))
-    );
+## 3. UI 組件設計
+
+### 3.1 NavBar 組件
+
+**位置**: 頂部固定
+**功能**: Logo、語言切換、工具導航
+
+**結構**:
+```typescript
+// components/NavBar.tsx
+export default function NavBar() {
+  return (
+    <nav className="fixed top-0 w-full h-16 bg-white border-b border-gray-200 z-50">
+      <div className="container mx-auto flex items-center justify-between px-4 h-full">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <Logo className="h-8 w-8" />
+          <span className="text-xl font-bold">CloudTools AI</span>
+        </Link>
+
+        {/* 桌面端工具導航 */}
+        <div className="hidden md:flex items-center gap-6">
+          <ToolLinks />
+        </div>
+
+        {/* 語言切換器 (右側) */}
+        <LanguageSwitcher />
+      </div>
+    </nav>
+  );
+}
+```
+
+**響應式設計**:
+- **桌面端** (≥768px): 完整導航顯示
+- **移動端** (<768px): 隱藏工具導航，使用底部 Tab Bar
+
+### 3.2 工具列設計
+
+#### 3.2.1 桌面端工具列（可拖動）
+
+**位置**: 頁面左側
+**功能**: 工具切換、拖動排序、收合
+
+**結構**:
+```typescript
+// components/ToolBar/DesktopToolBar.tsx
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+
+export default function DesktopToolBar() {
+  const { tools, reorderTools } = useToolStore();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  return (
+    <aside className={cn(
+      "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={tools} strategy={verticalListSortingStrategy}>
+          {tools.map(tool => (
+            <SortableToolItem key={tool.id} tool={tool} isCollapsed={isCollapsed} />
+          ))}
+        </SortableContext>
+      </DndContext>
+
+      {/* 收合按鈕 */}
+      <button
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute bottom-4 right-4 p-2 rounded-lg hover:bg-gray-100"
+      >
+        {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
+      </button>
+    </aside>
+  );
+}
+```
+
+**拖動效果 (GPU 加速)**:
+```css
+/* globals.css */
+.sortable-item {
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  transform: translateZ(0); /* 強制 GPU 加速 */
+}
+
+.sortable-item.dragging {
+  opacity: 0.5;
+  z-index: 999;
+  cursor: grabbing;
+}
+```
+
+#### 3.2.2 移動端工具列（底部 Tab Bar）
+
+**位置**: 底部固定
+**功能**: 工具切換、不可拖動
+
+**結構**:
+```typescript
+// components/ToolBar/MobileTabBar.tsx
+export default function MobileTabBar() {
+  const { tools } = useToolStore();
+  const pathname = usePathname();
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 z-50 md:hidden">
+      <div className="flex items-center justify-around h-full">
+        {tools.map(tool => (
+          <Link
+            key={tool.id}
+            href={`/${tool.slug}`}
+            className={cn(
+              "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors",
+              pathname.includes(tool.slug) ? "text-primary bg-primary/10" : "text-gray-600"
+            )}
+          >
+            <tool.icon className="h-6 w-6" />
+            <span className="text-xs">{tool.name}</span>
+          </Link>
+        ))}
+      </div>
+    </nav>
+  );
+}
+```
+
+### 3.3 工具列收合功能
+
+**狀態管理**:
+```typescript
+// stores/toolStore.ts
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+interface ToolStore {
+  tools: Tool[];
+  isCollapsed: boolean;
+  reorderTools: (activeId: string, overId: string) => void;
+  toggleCollapse: () => void;
+}
+
+export const useToolStore = create<ToolStore>()(
+  persist(
+    (set) => ({
+      tools: INITIAL_TOOLS,
+      isCollapsed: false,
+      reorderTools: (activeId, overId) => {
+        set((state) => {
+          const oldIndex = state.tools.findIndex(t => t.id === activeId);
+          const newIndex = state.tools.findIndex(t => t.id === overId);
+          return { tools: arrayMove(state.tools, oldIndex, newIndex) };
+        });
+      },
+      toggleCollapse: () => set((state) => ({ isCollapsed: !state.isCollapsed })),
+    }),
+    { name: 'tool-storage' }
+  )
+);
+```
+
+**收合狀態**:
+- **展開** (w-64): 顯示完整工具名稱
+- **收合** (w-16): 僅顯示圖標
+- **持久化**: localStorage 保存收合狀態
+
+---
+
+## 4. 狀態管理設計
+
+### 4.1 Zustand Store 架構
+
+```typescript
+// stores/index.ts
+export { useToolStore } from './toolStore';
+export { useImageStore } from './imageStore';
+export { useUIStore } from './uiStore';
+
+// stores/imageStore.ts
+interface ImageStore {
+  originalImage: File | null;
+  processedImage: string | null;
+  isProcessing: boolean;
+  error: string | null;
+  setOriginalImage: (file: File) => void;
+  setProcessedImage: (url: string) => void;
+  setProcessing: (status: boolean) => void;
+  setError: (error: string | null) => void;
+  reset: () => void;
+}
+
+export const useImageStore = create<ImageStore>((set) => ({
+  originalImage: null,
+  processedImage: null,
+  isProcessing: false,
+  error: null,
+  setOriginalImage: (file) => set({ originalImage: file }),
+  setProcessedImage: (url) => set({ processedImage: url }),
+  setProcessing: (status) => set({ isProcessing: status }),
+  setError: (error) => set({ error }),
+  reset: () => set({
+    originalImage: null,
+    processedImage: null,
+    isProcessing: false,
+    error: null,
+  }),
+}));
+```
+
+### 4.2 localStorage 持久化
+
+**持久化策略**:
+- **工具排序**: `tool-storage` (Zustand persist)
+- **用戶偏好**: `user-preferences` (語言、主題)
+- **不持久化**: 圖片處理狀態 (安全性考量)
+
+```typescript
+// utils/localStorage.ts
+export const STORAGE_KEYS = {
+  TOOLS: 'tool-storage',
+  PREFERENCES: 'user-preferences',
+} as const;
+
+export function getStorageItem<T>(key: string, defaultValue: T): T {
+  if (typeof window === 'undefined') return defaultValue;
+
+  try {
+    const item = window.localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch (error) {
+    console.error('localStorage get error:', error);
+    return defaultValue;
   }
-  // 其他：Network First
-  else {
-    event.respondWith(
-      fetch(request).catch(() => caches.match(request))
-    );
-  }
+}
+```
+
+---
+
+## 5. 拖放功能設計
+
+### 5.1 @dnd-kit 配置
+
+```typescript
+// components/ToolBar/DraggableToolList.tsx
+import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableToolItem({ tool, isCollapsed }: { tool: Tool; isCollapsed: boolean }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: tool.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "sortable-item p-4 cursor-grab active:cursor-grabbing",
+        isDragging && "dragging"
+      )}
+      {...attributes}
+      {...listeners}
+    >
+      <tool.icon className="h-6 w-6" />
+      {!isCollapsed && <span className="ml-3">{tool.name}</span>}
+    </div>
+  );
+}
+
+export default function DraggableToolList() {
+  const { tools, reorderTools } = useToolStore();
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      reorderTools(active.id as string, over.id as string);
+    }
+  };
+
+  return (
+    <DndContext
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext items={tools} strategy={verticalListSortingStrategy}>
+        {tools.map(tool => (
+          <SortableToolItem key={tool.id} tool={tool} />
+        ))}
+      </SortableContext>
+    </DndContext>
+  );
+}
+```
+
+### 5.2 GPU 加速優化
+
+```css
+/* globals.css */
+.sortable-item {
+  /* 啟用 GPU 加速 */
+  transform: translateZ(0);
+  will-change: transform;
+
+  /* 平滑過渡 */
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sortable-item.dragging {
+  /* 拖動時提高層級 */
+  z-index: 999;
+  opacity: 0.5;
+
+  /* 禁用 pointer-events 避免干擾 */
+  pointer-events: none;
+}
+```
+
+**性能優化**:
+- 使用 `transform` 代替 `top/left` (觸發 GPU 加速)
+- `will-change: transform` 提前優化
+- `translateZ(0)` 強制使用 GPU layer
+
+---
+
+## 6. 響應式設計
+
+### 6.1 斷點定義
+
+```typescript
+// tailwind.config.ts
+export default {
+  theme: {
+    screens: {
+      'sm': '640px',  // 手機橫屏
+      'md': '768px',  // 平板
+      'lg': '1024px', // 桌面
+      'xl': '1280px', // 大桌面
+      '2xl': '1536px', // 超大桌面
+    },
+  },
+};
+```
+
+### 6.2 響應式佈局
+
+**桌面端** (≥768px):
+```
+┌─────────────────────────────────────┐
+│          NavBar (fixed)             │ ← 60px
+├──────────┬──────────────────────────┤
+│          │                          │
+│ ToolBar  │    Main Content          │
+│ (fixed)  │    (工具頁面)              │
+│ w-64     │    ml-64                 │
+│          │                          │
+│ 可拖動    │                          │
+│ 可收合    │                          │
+│          │                          │
+└──────────┴──────────────────────────┘
+```
+
+**移動端** (<768px):
+```
+┌─────────────────────────────────────┐
+│          NavBar (fixed)             │ ← 60px
+├─────────────────────────────────────┤
+│                                     │
+│        Main Content                 │
+│        (工具頁面)                     │
+│        pb-16                        │
+│                                     │
+│                                     │
+├─────────────────────────────────────┤
+│      Mobile Tab Bar (fixed)         │ ← 64px
+└─────────────────────────────────────┘
+```
+
+### 6.3 避免 Scroll Bar 策略
+
+**問題**: 過多滾動條影響 UX
+**解決方案**:
+
+1. **主內容區域**:
+```css
+/* globals.css */
+.main-content {
+  height: calc(100vh - 4rem); /* 減去 NavBar 高度 */
+  overflow-y: auto;
+  /* 隱藏滾動條但保留滾動功能 (Webkit) */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.main-content::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+```
+
+2. **工具列**:
+```typescript
+// 桌面端工具列
+<aside className="h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
+  {/* 工具列內容 */}
+</aside>
+```
+
+3. **響應式高度計算**:
+```typescript
+// 移動端考慮 Tab Bar
+<main className="md:h-[calc(100vh-4rem)] h-[calc(100vh-8rem)]">
+  {/* 主內容 */}
+</main>
+```
+
+---
+
+## 7. SEO 優化設計
+
+### 7.1 Metadata 配置
+
+```typescript
+// app/[locale]/layout.tsx
+import { Metadata } from 'next';
+
+export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
+  const t = await getTranslations('metadata');
+
+  return {
+    title: {
+      default: t('title'),
+      template: `%s | ${t('siteName')}`,
+    },
+    description: t('description'),
+    keywords: t('keywords'),
+    openGraph: {
+      title: t('title'),
+      description: t('description'),
+      url: `https://tools.cloudto.io/${params.locale}`,
+      siteName: t('siteName'),
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: t('siteName'),
+        },
+      ],
+      locale: params.locale,
+      alternateLocale: ['zh-tw', 'en', 'zh-cn', 'ja'].filter(l => l !== params.locale),
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: t('title'),
+      description: t('description'),
+      images: ['/twitter-image.png'],
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+    alternates: {
+      canonical: `https://tools.cloudto.io/${params.locale}`,
+      languages: {
+        'zh-TW': '/zh-tw',
+        'en': '/en',
+        'zh-CN': '/zh-cn',
+        'ja': '/ja',
+      },
+    },
+  };
+}
+```
+
+### 7.2 多語言 SEO
+
+**hreflang 標籤**:
+```typescript
+// app/[locale]/layout.tsx
+export default function LocaleLayout({ children, params }: { children: React.ReactNode; params: { locale: string } }) {
+  return (
+    <html lang={params.locale}>
+      <head>
+        <link rel="alternate" hrefLang="zh-tw" href="https://tools.cloudto.io/zh-tw" />
+        <link rel="alternate" hrefLang="en" href="https://tools.cloudto.io/en" />
+        <link rel="alternate" hrefLang="zh-cn" href="https://tools.cloudto.io/zh-cn" />
+        <link rel="alternate" hrefLang="ja" href="https://tools.cloudto.io/ja" />
+        <link rel="alternate" hrefLang="x-default" href="https://tools.cloudto.io/zh-tw" />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+### 7.3 Structured Data (Schema.org)
+
+```typescript
+// components/StructuredData.tsx
+export default function StructuredData({ locale }: { locale: string }) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "CloudTools AI",
+    "url": `https://tools.cloudto.io/${locale}`,
+    "description": "AI-powered image tools including background removal, compression, cropping, and conversion",
+    "applicationCategory": "UtilityApplication",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "inLanguage": [locale],
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+    />
+  );
+}
+```
+
+### 7.4 Core Web Vitals 優化
+
+**LCP (Largest Contentful Paint)**:
+- 使用 Next.js Image 優化
+- 預載關鍵圖片
+- 壓縮圖片資源
+
+**FID (First Input Delay)**:
+- 減少 JavaScript bundle 大小
+- 使用 code splitting
+- 延遲載入非關鍵 JS
+
+**CLS (Cumulative Layout Shift)**:
+- 為圖片設定明確寬高
+- 避免動態插入內容
+- 使用 `aspect-ratio` CSS 屬性
+
+```typescript
+// next.config.mjs
+export default {
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
+};
+```
+
+### 7.5 Lily SEO 驗證檢查清單
+
+**Lily 必須檢查的項目**:
+
+1. **Meta Tags**:
+   - ✅ Title (每頁不同，包含關鍵字)
+   - ✅ Description (120-160 字元)
+   - ✅ Keywords (相關性高)
+   - ✅ Open Graph tags (完整)
+   - ✅ Twitter Card tags (完整)
+
+2. **多語言 SEO**:
+   - ✅ hreflang 標籤 (所有語言版本)
+   - ✅ Canonical tags (正確指向)
+   - ✅ 語言切換功能正常
+   - ✅ URL 結構一致
+
+3. **Structured Data**:
+   - ✅ Schema.org JSON-LD (WebApplication)
+   - ✅ 無 Schema 錯誤 (Google Rich Results Test)
+
+4. **Core Web Vitals**:
+   - ✅ LCP < 2.5s
+   - ✅ FID < 100ms
+   - ✅ CLS < 0.1
+
+5. **技術 SEO**:
+   - ✅ Sitemap.xml 正確
+   - ✅ Robots.txt 正確
+   - ✅ 404 頁面友善
+   - ✅ HTTPS 正常
+   - ✅ 移動端友善 (Mobile-Friendly Test)
+
+6. **內容 SEO**:
+   - ✅ H1-H6 標籤層級正確
+   - ✅ 圖片 alt 屬性完整
+   - ✅ 內部連結合理
+   - ✅ 無死連結
+
+**驗證工具**:
+- Chrome DevTools (Lighthouse)
+- Playwright (MCP tool) - 自動化測試
+- Google Search Console
+- Google Rich Results Test
+- PageSpeed Insights
+
+**報告格式**:
+```markdown
+## SEO 驗證報告 - [功能名稱]
+
+**日期**: YYYY-MM-DD
+**驗證環境**: Dev (devtools.cloudto.io)
+
+### 檢查結果
+
+#### Meta Tags
+- [✅/❌] Title
+- [✅/❌] Description
+- [✅/❌] Keywords
+- [✅/❌] Open Graph
+- [✅/❌] Twitter Card
+
+#### 多語言 SEO
+- [✅/❌] hreflang tags
+- [✅/❌] Canonical tags
+- [✅/❌] 語言切換
+
+#### Core Web Vitals
+- LCP: X.Xs (目標 < 2.5s)
+- FID: XXms (目標 < 100ms)
+- CLS: X.XX (目標 < 0.1)
+
+#### 問題與建議
+1. [高優先級] 問題描述 + 修復建議
+2. [中優先級] 問題描述 + 修復建議
+
+**整體評分**: ✅ 通過 / ⚠️ 需改進 / ❌ 未通過
+```
+
+---
+
+## 8. 多環境部署設計
+
+### 8.1 環境配置
+
+**Dev Environment**:
+- **URL**: https://devtools.cloudto.io
+- **分支**: `develop`
+- **用途**: 開發測試、QA 驗證
+- **自動部署**: 推送到 `develop` 分支自動部署
+
+**Production Environment**:
+- **URL**: https://tools.cloudto.io
+- **分支**: `master`
+- **用途**: 生產環境
+- **手動部署**: 僅在 CTO 批准後 merge 到 `master`
+
+### 8.2 環境變數配置
+
+```bash
+# .env.development (Dev)
+NEXT_PUBLIC_API_URL=https://devtools.cloudto.io/api
+NEXT_PUBLIC_ENV=development
+
+# .env.production (Prd)
+NEXT_PUBLIC_API_URL=https://tools.cloudto.io/api
+NEXT_PUBLIC_ENV=production
+```
+
+### 8.3 Cloudflare DNS 配置
+
+**DNS 記錄配置**:
+
+```
+類型    名稱              目標                    Proxy 狀態
+────────────────────────────────────────────────────────
+A       devtools         165.154.226.78          已代理 (橘色雲)
+A       tools            165.154.226.78          已代理 (橘色雲)
+```
+
+**Cloudflare 角色**:
+- **CDN**: Edge Cache（快取靜態資源）
+- **Proxy**: 隱藏真實 IP，提供 DDoS 防護
+- **SSL**: 自動 HTTPS + SSL 憑證管理
+- **WAF**: Web Application Firewall（防火牆規則）
+
+**VPS Nginx 配置**（對應 DNS）:
+- Dev: `devtools.cloudto.io` → Nginx Port 3000 → PM2 (develop)
+- Prd: `tools.cloudto.io` → Nginx Port 3001 → PM2 (production, cluster mode)
+
+### 8.4 部署流程
+
+```mermaid
+graph TD
+    A[開發完成] --> B[Local 測試]
+    B --> C[推送到 develop 分支]
+    C --> D[自動部署到 Dev 環境]
+    D --> E[QA 線上測試]
+    E --> F{測試通過?}
+    F -->|否| G[修復 Bug]
+    G --> B
+    F -->|是| H[Lily SEO 驗證]
+    H --> I{SEO 通過?}
+    I -->|否| J[修復 SEO 問題]
+    J --> B
+    I -->|是| K[CTO 驗收]
+    K --> L{CTO 驗收通過?}
+    L -->|否| M[修正問題]
+    M --> B
+    L -->|是| N[提交 CEO 審批]
+    N --> O{CEO 批准?}
+    O -->|否| M
+    O -->|是| P[Merge to master]
+    P --> Q[自動部署到 Prd 環境]
+```
+
+**關鍵規則**:
+- ❌ **未經 CEO 批准不可 merge 到 master**
+- ✅ **CTO 驗收完成後提交 CEO 審批**
+- ✅ **Dev 環境自動部署** (develop 分支)
+- ✅ **Prd 環境手動觸發** (master 分支)
+- ✅ **必須完成 Local + Dev + SEO 測試**
+
+---
+
+## 9. 測試策略
+
+### 9.1 測試層級
+
+**1. Local 測試** (開發者):
+- 單元測試 (Jest + React Testing Library)
+- 本地端測試 (http://localhost:5173)
+- 代碼覆蓋率 ≥ 80%
+
+**2. Dev 線上測試** (QA Team - Lucia/Ann):
+- E2E 測試 (Playwright MCP tool)
+- 跨瀏覽器測試 (Chrome, Firefox, Safari)
+- 響應式測試 (Desktop, Tablet, Mobile)
+- 測試環境: https://devtools.cloudto.io
+
+**3. SEO 驗證** (Lily):
+- Meta tags 檢查
+- 多語言 SEO 驗證
+- Core Web Vitals 測試
+- Lighthouse 審計
+
+**4. CTO 驗收** (CTO):
+- 功能完整性檢查
+- 規格符合性驗證
+- 性能與安全審查
+- 最終批准決策
+
+### 9.2 測試工具配置
+
+**Jest 配置**:
+```typescript
+// jest.config.ts
+export default {
+  preset: 'ts-jest',
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/*.stories.tsx',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+};
+```
+
+**Playwright 配置** (MCP tool):
+```typescript
+// Lucia/Ann 使用 Playwright MCP tool 執行 E2E 測試
+// 測試腳本範例
+test('Remove background flow', async ({ page }) => {
+  await page.goto('https://devtools.cloudto.io/zh-tw/removebg');
+
+  // 上傳圖片
+  await page.setInputFiles('input[type="file"]', 'test-image.jpg');
+
+  // 等待處理完成
+  await page.waitForSelector('.processed-image');
+
+  // 驗證結果
+  const downloadBtn = page.locator('button:has-text("下載")');
+  await expect(downloadBtn).toBeVisible();
 });
 ```
 
----
+### 9.3 測試檢查清單
 
-## 九、監控與告警設計（v1.2 規劃）
+**開發者 (Costa/Waylon) 檢查清單**:
+- [ ] 單元測試通過 (npm run test)
+- [ ] 代碼覆蓋率 ≥ 80%
+- [ ] Local 端功能正常
+- [ ] 無 TypeScript 錯誤
+- [ ] 無 ESLint 警告
+- [ ] 已推送到 develop 分支
 
-### 9.1 推薦監控方案
+**QA (Lucia/Ann) 檢查清單**:
+- [ ] Dev 環境部署成功
+- [ ] E2E 測試通過 (Playwright MCP)
+- [ ] 跨瀏覽器測試通過
+- [ ] 響應式測試通過 (Desktop/Tablet/Mobile)
+- [ ] 無 Critical/High 等級 Bug
+- [ ] 已通知 Lily 進行 SEO 驗證
 
-| 類型 | 工具 | 用途 | 成本 |
-|------|------|------|------|
-| Uptime 監控 | UptimeRobot | 服務可用性 | 免費 |
-| APM | New Relic | 應用效能監控 | 免費方案 |
-| 錯誤追蹤 | Sentry | 前後端錯誤 | 免費方案 |
-| 日誌分析 | Grafana Loki | 日誌聚合 | 開源免費 |
+**SEO (Lily) 檢查清單**:
+- [ ] Meta tags 完整且正確
+- [ ] hreflang tags 正確配置
+- [ ] Structured data 無錯誤
+- [ ] Core Web Vitals 達標 (LCP/FID/CLS)
+- [ ] Lighthouse SEO 分數 ≥ 90
+- [ ] 多語言版本正常
+- [ ] 已提交 SEO 驗證報告給 CTO
 
-### 9.2 告警規則
-
-**Uptime 監控：**
-- `/health` endpoint 5 分鐘檢查一次
-- 連續 3 次失敗 → 發送告警（Email / Slack）
-
-**APM 告警：**
-- 回應時間 > 1 秒
-- 錯誤率 > 1%
-- 記憶體使用 > 80%
-
----
-
-## 十、測試策略設計
-
-### 10.1 單元測試（80% 覆蓋率目標）
-
-**前端單元測試：**
-- ONNX Runtime wrapper
-- 圖片處理邏輯
-- 組件邏輯（不含 UI）
-
-**後端單元測試：**
-- API endpoints
-- Middleware
-- 工具函數
-
-**測試框架：**
-- Vitest（前端）
-- Jest（後端）
-
-### 10.2 E2E 測試
-
-**使用工具：**
-- playwright (MCP tool)
-- chrome-devtools (MCP tool)
-
-**測試場景：**
-1. 上傳圖片 → 去背 → 下載（完整流程）
-2. 語言切換（4 種語言）
-3. 瀏覽器兼容性（Chrome/Edge/Firefox/Safari）
-4. 響應式（Desktop/Tablet/Mobile）
-5. 錯誤處理（大圖片、不支援瀏覽器）
+**CTO 驗收檢查清單**:
+- [ ] 所有測試通過 (Local + Dev + SEO)
+- [ ] 規格符合 SpecKit/OpenSpec
+- [ ] 代碼質量達標
+- [ ] 性能指標達標
+- [ ] 安全審查通過
+- [ ] 文檔完整
+- [ ] **批准 merge to master**
 
 ---
 
-## 十一、未來演進設計
+## 10. 實施時程
 
-### 11.1 v1.2 架構演進（帳號系統）
+### 10.1 總覽 (13 天)
 
 ```
-Cloudflare → Nginx → Express → Next.js + WebGL
-                        ↓
-                  PostgreSQL
-                  (users, image_history)
+階段                任務                           天數    負責人
+────────────────────────────────────────────────────────
+Phase 1: 基礎設施   專案初始化 + 路由架構            2 天   Waylon
+Phase 2: UI 框架    NavBar + 工具列 + 響應式         3 天   Waylon
+Phase 3: 核心功能   RemoveBG 實現                   3 天   Costa + Waylon
+Phase 4: 測試驗證   QA 測試 + SEO 驗證              2 天   Lucia/Ann + Lily
+Phase 5: 部署上線   Dev 部署 + Prd 部署             2 天   Louis
+Phase 6: 驗收       CTO 最終驗收                    1 天   CTO
+────────────────────────────────────────────────────────
+總計                                               13 天
 ```
 
-**新增 API：**
-- POST /api/auth/register
-- POST /api/auth/login
-- POST /api/auth/logout
-- GET /api/user/profile
-- GET /api/history
+### 10.2 詳細時程
 
-### 11.2 v1.3 架構演進（伺服器端 API）
+#### Phase 1: 基礎設施 (Day 1-2)
+
+**Day 1: 專案初始化**
+- **負責人**: Waylon
+- **任務**:
+  - [ ] 初始化 Next.js 15 專案
+  - [ ] 安裝依賴 (React 19 RC, TypeScript 5.7, Tailwind 4)
+  - [ ] 配置 ESLint + Prettier
+  - [ ] 配置 Git hooks (Husky)
+  - [ ] 建立專案目錄結構
+  - [ ] 配置環境變數 (.env.development, .env.production)
+
+**Day 2: 路由架構**
+- **負責人**: Waylon
+- **任務**:
+  - [ ] 實現 `[locale]` 路由
+  - [ ] 實現 `[tool]` 動態路由
+  - [ ] 配置 next-intl 國際化
+  - [ ] 實現首頁重定向邏輯
+  - [ ] 實現客製化 404 頁面
+  - [ ] 測試多語言路由
+
+#### Phase 2: UI 框架 (Day 3-5)
+
+**Day 3: NavBar 組件**
+- **負責人**: Waylon
+- **任務**:
+  - [ ] 建立 NavBar 組件
+  - [ ] 實現 Logo + 品牌名稱
+  - [ ] 實現語言切換器 (右側)
+  - [ ] 響應式設計 (Desktop/Mobile)
+  - [ ] 單元測試
+
+**Day 4: 桌面端工具列**
+- **負責人**: Waylon
+- **任務**:
+  - [ ] 建立 DesktopToolBar 組件
+  - [ ] 整合 @dnd-kit 拖放功能
+  - [ ] 實現工具排序邏輯
+  - [ ] 實現收合功能
+  - [ ] GPU 加速優化
+  - [ ] Zustand 狀態管理
+  - [ ] 單元測試
+
+**Day 5: 移動端工具列**
+- **負責人**: Waylon
+- **任務**:
+  - [ ] 建立 MobileTabBar 組件
+  - [ ] 底部固定佈局
+  - [ ] 響應式切換邏輯
+  - [ ] 避免 Scroll Bar 優化
+  - [ ] 單元測試
+
+#### Phase 3: 核心功能 (Day 6-8)
+
+**Day 6: RemoveBG API**
+- **負責人**: Costa
+- **任務**:
+  - [ ] 建立 `/api/removebg/route.ts`
+  - [ ] 整合 remove.bg API
+  - [ ] 錯誤處理邏輯
+  - [ ] 單元測試
+  - [ ] API 文檔
+
+**Day 7: RemoveBG 前端 (1)**
+- **負責人**: Waylon
+- **任務**:
+  - [ ] 建立 RemoveBG 頁面
+  - [ ] 圖片上傳組件
+  - [ ] 預覽功能
+  - [ ] 狀態管理 (Zustand)
+  - [ ] 單元測試
+
+**Day 8: RemoveBG 前端 (2)**
+- **負責人**: Waylon
+- **任務**:
+  - [ ] 處理進度顯示
+  - [ ] 結果展示
+  - [ ] 下載功能
+  - [ ] 錯誤處理 UI
+  - [ ] 整合測試
+
+#### Phase 4: 測試驗證 (Day 9-10)
+
+**Day 9: QA 測試**
+- **負責人**: Lucia & Ann
+- **任務**:
+  - [ ] Local 環境測試
+  - [ ] Dev 環境測試 (https://devtools.cloudto.io)
+  - [ ] E2E 測試 (Playwright MCP tool)
+  - [ ] 跨瀏覽器測試
+  - [ ] 響應式測試
+  - [ ] Bug 回報 (如有)
+
+**Day 10: SEO 驗證**
+- **負責人**: Lily
+- **任務**:
+  - [ ] Meta tags 檢查
+  - [ ] hreflang tags 驗證
+  - [ ] Structured data 檢查
+  - [ ] Core Web Vitals 測試
+  - [ ] Lighthouse 審計
+  - [ ] 多語言版本驗證
+  - [ ] 提交 SEO 驗證報告
+
+#### Phase 5: 部署上線 (Day 11-12)
+
+**Day 11: Dev 環境部署**
+- **負責人**: Louis
+- **任務**:
+  - [ ] 配置 VPS Nginx (devtools.cloudto.io → Port 3000)
+  - [ ] 配置 PM2 (develop instance)
+  - [ ] 配置 Cloudflare DNS (A record: devtools → 165.154.226.78)
+  - [ ] 推送到 develop 分支
+  - [ ] 部署到 VPS (PM2 restart develop)
+  - [ ] 驗證部署成功 (https://devtools.cloudto.io)
+  - [ ] QA 再次測試
+
+**Day 12: Prd 環境準備**
+- **負責人**: Louis
+- **任務**:
+  - [ ] 配置 VPS Nginx (tools.cloudto.io → Port 3001)
+  - [ ] 配置 PM2 (production instance, cluster mode)
+  - [ ] 配置 Cloudflare DNS (A record: tools → 165.154.226.78)
+  - [ ] 等待 CTO 批准
+  - [ ] (批准後) Merge to master
+  - [ ] 部署到 VPS (PM2 restart production)
+  - [ ] 驗證 Prd 環境 (https://tools.cloudto.io)
+
+#### Phase 6: CTO 驗收 (Day 13)
+
+**Day 13: 最終驗收**
+- **負責人**: CTO
+- **任務**:
+  - [ ] 檢查所有測試報告
+  - [ ] 驗證 Dev 環境功能
+  - [ ] 檢查 SEO 驗證結果
+  - [ ] 審查代碼質量
+  - [ ] 審查文檔完整性
+  - [ ] 做出最終批准決策
+  - [ ] 批准 merge to master
+  - [ ] 產出驗收報告
+
+---
+
+## 11. 風險與緩解措施
+
+### 11.1 技術風險
+
+**風險 1: React 19 RC 穩定性**
+- **描述**: React 19 仍處於 RC 階段，可能存在未知 Bug
+- **影響**: 高
+- **緩解措施**:
+  - 優先使用穩定 API
+  - 避免使用實驗性功能
+  - 準備降級到 React 18 的方案
+  - 密切關注 React 官方更新
+
+**風險 2: @dnd-kit 性能問題**
+- **描述**: 拖放功能在低性能設備上可能卡頓
+- **影響**: 中
+- **緩解措施**:
+  - 使用 GPU 加速
+  - 限制可拖動項目數量
+  - 節流 (throttle) 拖動事件
+  - 提供降級方案 (禁用拖放)
+
+**風險 3: VPS 資源限制**
+- **描述**: VPS 資源（2 Core / 4 GB RAM）可能不足以應對高流量
+- **影響**: 中
+- **緩解措施**:
+  - 使用 PM2 cluster mode 多進程部署
+  - 使用 Cloudflare CDN 減輕 VPS 負載
+  - 監控 VPS 資源使用率
+  - 準備垂直擴展方案（升級 VPS 配置）
+
+### 11.2 流程風險
+
+**風險 4: 測試時程延誤**
+- **描述**: QA 測試或 SEO 驗證發現大量問題
+- **影響**: 高
+- **緩解措施**:
+  - 開發階段嚴格執行單元測試
+  - 提早啟動 QA 測試 (與開發並行)
+  - 預留 2 天 buffer 時間
+  - 優先修復 Critical/High 問題
+
+**風險 5: CTO 驗收未通過**
+- **描述**: CTO 驗收階段發現規格不符
+- **影響**: 高
+- **緩解措施**:
+  - 嚴格遵循 SpecKit/OpenSpec 規格
+  - 開發過程中定期與 CTO 同步
+  - 提供詳細的開發文檔
+  - 預留修正時間
+
+### 11.3 部署風險
+
+**風險 6: Dev 與 Prd 環境差異**
+- **描述**: Dev 測試通過但 Prd 部署失敗
+- **影響**: 高
+- **緩解措施**:
+  - Dev 與 Prd 使用相同配置
+  - 部署前檢查環境變數
+  - 使用 staging 環境模擬 Prd
+  - 準備快速回滾方案
+
+**風險 7: 多語言路由問題**
+- **描述**: 語言切換導致 SEO 或用戶體驗問題
+- **影響**: 中
+- **緩解措施**:
+  - 使用 next-intl 成熟方案
+  - Lily 提早介入 SEO 驗證
+  - 完整測試所有語言版本
+  - 監控 Google Search Console
+
+---
+
+## 12. 成功指標
+
+### 12.1 技術指標
+
+**性能**:
+- ✅ LCP < 2.5s
+- ✅ FID < 100ms
+- ✅ CLS < 0.1
+- ✅ Lighthouse Performance Score ≥ 90
+
+**質量**:
+- ✅ 單元測試覆蓋率 ≥ 80%
+- ✅ E2E 測試通過率 100%
+- ✅ 無 Critical/High 等級 Bug
+- ✅ TypeScript 無錯誤
+
+**SEO**:
+- ✅ Lighthouse SEO Score ≥ 90
+- ✅ 所有語言版本 hreflang 正確
+- ✅ Structured data 無錯誤
+- ✅ Mobile-Friendly Test 通過
+
+### 12.2 用戶體驗指標
+
+**響應式**:
+- ✅ 支援 Desktop/Tablet/Mobile
+- ✅ 無水平滾動條
+- ✅ 觸控友善 (Mobile)
+
+**功能**:
+- ✅ RemoveBG 功能正常
+- ✅ 工具列拖放流暢 (Desktop)
+- ✅ 語言切換無誤
+- ✅ 錯誤處理友善
+
+### 12.3 部署指標
+
+**環境**:
+- ✅ Dev 環境自動部署
+- ✅ Prd 環境手動部署
+- ✅ 零停機部署
+- ✅ 回滾機制可用
+
+**監控**:
+- ✅ Cloudflare Analytics 啟用
+- ✅ 錯誤追蹤啟用
+- ✅ 性能監控啟用
+
+---
+
+## 13. 附錄
+
+### 13.1 工具定義
+
+```typescript
+// types/tools.ts
+export interface Tool {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  available: boolean;
+  comingSoon: boolean;
+}
+
+export const TOOLS: Tool[] = [
+  {
+    id: 'removebg',
+    slug: 'removebg',
+    name: 'Remove Background',
+    description: 'AI-powered background removal',
+    icon: ImageIcon,
+    available: true,
+    comingSoon: false,
+  },
+  {
+    id: 'compress',
+    slug: 'compress',
+    name: 'Compress Image',
+    description: 'Reduce image file size',
+    icon: CompressIcon,
+    available: false,
+    comingSoon: true,
+  },
+  {
+    id: 'crop',
+    slug: 'crop',
+    name: 'Crop Image',
+    description: 'Crop and resize images',
+    icon: CropIcon,
+    available: false,
+    comingSoon: true,
+  },
+  {
+    id: 'convert',
+    slug: 'convert',
+    name: 'Convert Format',
+    description: 'Convert between image formats',
+    icon: ConvertIcon,
+    available: false,
+    comingSoon: true,
+  },
+];
+```
+
+### 13.2 目錄結構
 
 ```
-Cloudflare → Nginx → Express → Next.js + WebGL (主要)
-                        ↓
-                  Python FastAPI (GPU 去背)
-                  (部署在雲端 GPU 服務)
+cloudtools-ai/
+├── app/
+│   ├── [locale]/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx (重定向到 /removebg)
+│   │   ├── [tool]/
+│   │   │   ├── page.tsx
+│   │   │   └── layout.tsx
+│   │   └── not-found.tsx (Coming Soon 404)
+│   ├── api/
+│   │   ├── removebg/
+│   │   │   └── route.ts
+│   │   └── health/
+│   │       └── route.ts
+│   ├── layout.tsx
+│   └── globals.css
+├── components/
+│   ├── NavBar/
+│   │   ├── NavBar.tsx
+│   │   ├── Logo.tsx
+│   │   └── LanguageSwitcher.tsx
+│   ├── ToolBar/
+│   │   ├── DesktopToolBar.tsx
+│   │   ├── MobileTabBar.tsx
+│   │   └── SortableToolItem.tsx
+│   ├── RemoveBG/
+│   │   ├── ImageUpload.tsx
+│   │   ├── ImagePreview.tsx
+│   │   └── DownloadButton.tsx
+│   └── StructuredData.tsx
+├── stores/
+│   ├── toolStore.ts
+│   ├── imageStore.ts
+│   └── uiStore.ts
+├── lib/
+│   ├── api/
+│   │   └── removebg.ts
+│   └── utils/
+│       ├── localStorage.ts
+│       └── cn.ts
+├── types/
+│   ├── tools.ts
+│   └── images.ts
+├── public/
+│   ├── locales/
+│   │   ├── zh-tw/
+│   │   ├── en/
+│   │   ├── zh-cn/
+│   │   └── ja/
+│   ├── og-image.png
+│   └── twitter-image.png
+├── docs/
+│   ├── specs/
+│   │   ├── proposal.md
+│   │   ├── design.md (本文件)
+│   │   ├── tasks.md
+│   │   └── spec.md
+│   └── architecture/
+│       └── system-design.md
+├── tests/
+│   ├── unit/
+│   └── e2e/
+├── .env.development
+├── .env.production
+├── next.config.mjs
+├── tailwind.config.ts
+├── tsconfig.json
+└── package.json
 ```
 
-**API：**
-- POST /api/remove-bg（伺服器端降級方案）
+### 13.3 關鍵依賴版本
 
-**注意：** VPS (2C/4GB) 無 GPU，需使用雲端 GPU 服務（AWS Lambda GPU / Modal.com）
-
----
-
-## 十二、API 規格設計
-
-### 12.1 RESTful API 設計
-
-**v1.0/v1.1 API Endpoints：**
-
-| Method | Path | Description | Auth | Cache |
-|--------|------|-------------|------|-------|
-| GET | `/health` | 健康檢查 | No | No |
-| GET | `/api/version` | 版本資訊 | No | 1 hour |
-
-**v1.2 規劃：**
-
-| Method | Path | Description | Auth | Cache |
-|--------|------|-------------|------|-------|
-| POST | `/api/auth/register` | 註冊 | No | No |
-| POST | `/api/auth/login` | 登入 | No | No |
-| POST | `/api/auth/logout` | 登出 | Yes | No |
-| GET | `/api/user/profile` | 用戶資料 | Yes | No |
-| GET | `/api/history` | 圖片歷史 | Yes | No |
-
----
-
-## 十三、CI/CD 設計（v1.2 規劃）
-
-### 13.1 Git 工作流程
-
-**分支策略（Hybrid GitHub Flow）：**
-- `master` - 生產環境
-- `develop` - 開發環境
-- `feature/*` - 功能分支
-- `hotfix/*` - 緊急修復
-
-### 13.2 自動化流程
-
-```yaml
-# .github/workflows/deploy-dev.yml
-name: Deploy to Development
-
-on:
-  push:
-    branches: [develop]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-      - run: npm install
-      - run: npm run build
-      - run: npm test
-      - name: Deploy to Dev VPS (使用 Git)
-        run: |
-          ssh jackalchiu@165.154.226.78 'cd /var/www/ai-cloudto-io-dev && git pull origin develop && npm install && npm run build && pm2 restart ai-cloudto-io-dev'
+```json
+{
+  "dependencies": {
+    "next": "^15.0.0",
+    "react": "19.0.0-rc",
+    "react-dom": "19.0.0-rc",
+    "typescript": "^5.7.0",
+    "tailwindcss": "^4.0.0",
+    "@radix-ui/react-dropdown-menu": "^2.0.0",
+    "@radix-ui/react-select": "^2.0.0",
+    "@dnd-kit/core": "^6.1.0",
+    "@dnd-kit/sortable": "^8.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "zustand": "^5.0.0",
+    "next-intl": "^3.0.0",
+    "framer-motion": "^11.0.0",
+    "lucide-react": "^0.400.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/node": "^22.0.0",
+    "jest": "^29.7.0",
+    "@testing-library/react": "^16.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.3.0",
+    "husky": "^9.0.0"
+  }
+}
 ```
 
 ---
 
-## 十四、技術決策記錄（ADR）
+## 14. 驗收標準
 
-### ADR-005: Cloudflare IP 鎖定 + Flexible SSL
+**CTO 驗收時必須滿足以下所有條件**:
 
-**決策日期：** 2025-10-25
-**狀態：** ✅ 已實作
+### 14.1 功能完整性
+- ✅ 首頁正確重定向到 `/[locale]/removebg`
+- ✅ RemoveBG 功能正常 (上傳→處理→下載)
+- ✅ 工具列拖放功能正常 (Desktop)
+- ✅ 工具列收合功能正常 (Desktop)
+- ✅ 移動端 Tab Bar 功能正常
+- ✅ 語言切換功能正常 (zh-tw, en, zh-cn, ja)
+- ✅ Coming Soon 404 頁面正常
 
-**背景：**
-- Cloudflare Flexible SSL 模式（Cloudflare ↔ VPS 使用 HTTP）
-- 存在理論上的中間人攻擊風險
+### 14.2 測試覆蓋
+- ✅ 單元測試覆蓋率 ≥ 80%
+- ✅ E2E 測試通過 (Lucia/Ann 報告)
+- ✅ Local 測試通過
+- ✅ Dev 線上測試通過
+- ✅ SEO 驗證通過 (Lily 報告)
 
-**決策：**
-- 使用 Flexible SSL + IP 鎖定組合
-- VPS 僅接受 Cloudflare IP 範圍請求
+### 14.3 性能指標
+- ✅ Lighthouse Performance ≥ 90
+- ✅ LCP < 2.5s
+- ✅ FID < 100ms
+- ✅ CLS < 0.1
 
-**理由：**
-- ✅ IP 鎖定提供強大安全層
-- ✅ 攻擊者需先攻破 Cloudflare 內網（極高難度）
-- ✅ 簡化配置（無需維護 Let's Encrypt）
-- ✅ 性能最佳（無 SSL 握手開銷）
-- ✅ 已達商業級安全標準
+### 14.4 SEO 指標
+- ✅ Lighthouse SEO ≥ 90
+- ✅ Meta tags 完整
+- ✅ hreflang tags 正確
+- ✅ Structured data 無錯誤
+- ✅ Mobile-Friendly
 
-**替代方案：**
-- Full SSL（需 Let's Encrypt 證書）
-- 優先級降為「可選改進」
+### 14.5 代碼質量
+- ✅ 無 TypeScript 錯誤
+- ✅ 無 ESLint 警告
+- ✅ Code Review 通過 (Chris/Shawn)
+- ✅ 遵循 Conventional Commits
 
-**後果：**
-- ✅ 安全性充分（多層防護）
-- ✅ 配置簡化
-- ✅ 性能最佳
+### 14.6 文檔完整性
+- ✅ README.md 完整
+- ✅ API 文檔完整
+- ✅ 技術文檔完整 (本文件)
+- ✅ 部署文檔完整
 
----
+### 14.7 部署就緒
+- ✅ Dev 環境部署成功（VPS + Nginx + PM2）
+- ✅ 環境變數配置正確
+- ✅ Cloudflare DNS 配置完成
+- ✅ PM2 進程管理正常
+- ✅ 回滾機制可用
 
-## 十五、設計批准檢查清單
-
-### 設計完整性檢查
-
-- [x] 系統架構圖清晰
-- [x] 資料流向圖完整
-- [x] 組件設計詳細
-- [x] API 規格明確
-- [x] 安全設計充分
-- [x] 部署流程清楚
-- [x] 性能優化策略明確
-- [x] 監控告警規劃（v1.2）
-- [x] 未來演進路徑清晰
-- [x] ADR 記錄完整
-
-### CTO 審查項目
-
-- [ ] 技術方案是否合理？
-- [ ] 架構是否符合 Proposal？
-- [ ] 安全措施是否充分？
-- [ ] 性能目標是否可達成？
-- [ ] 未來擴展是否考慮？
+**只有當以上所有條件均滿足時，CTO 才批准 merge to master 並部署到 Prd 環境。**
 
 ---
 
-**設計狀態：** ⏳ 待 CTO 審查批准
+**文檔結束**
 
-**設計人員：** CTO + Leo
-**設計日期：** 2025-10-25
+**下一步**: CTO 審核本設計文檔，批准後進入 tasks.md 階段。

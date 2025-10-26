@@ -70,7 +70,7 @@
 
 ## 四、系統架構
 
-### 完整架構圖（VPS + Express + Cloudflare CDN）
+### 完整架構圖（VPS + Next.js Standalone + Cloudflare CDN）
 
 ```
 使用者瀏覽器
@@ -79,13 +79,11 @@ Cloudflare CDN + Proxy + WAF
    ↓ (HTTP - Flexible SSL)
 Nginx (Reverse Proxy)
    ↓
-Express (Node.js 20 LTS)
+Next.js 15 App Router (Standalone Mode)
    ↓
-Next.js 15 App Router
+Client-side WebGL Runtime (onnxruntime-web + transformers)
    ↓
-Client-side WebGL Runtime (onnxruntime-web)
-   ↓
-圖片去背模型 (U²Net Lite / MODNet)
+圖片去背模型 (u2netp.onnx)
 ```
 
 ### 架構說明
@@ -99,51 +97,68 @@ Client-side WebGL Runtime (onnxruntime-web)
 - **不執行任何應用程式邏輯**
 
 **VPS 層（165.154.226.78）：**
-- Nginx：反向代理，轉發請求到 Express
-- Express：
-  - 提供 Next.js 應用
+- Nginx：反向代理，轉發請求到 Next.js 應用
+- Next.js Standalone Server：
+  - 提供前端應用（SSR/SSG）
+  - 提供靜態資源和 ONNX 模型
+  - Server Actions 處理（如需要）
+  - 自動優化和壓縮
+- PM2：進程管理，自動重啟
+- **開發環境 Express Backend** (port 5566)：
   - `/health` 健康檢查
   - `/api/version` 版本資訊
-  - 日誌記錄
-  - 安全中間件（Helmet）
-  - 未來 API endpoints
-- PM2：進程管理，自動重啟
+  - `/api/hello` 測試 API
+  - 日誌記錄 middleware
+  - 安全中間件（Helmet, CORS, Compression）
+  - **注意：Express backend 主要用於開發測試，生產環境使用 Next.js standalone**
 
 **客戶端層（瀏覽器）：**
 - Next.js 前端應用（SSR 或 SSG）
-- WebGL Runtime 執行 ONNX 模型
+- WebGL Runtime 執行 ONNX 模型 (onnxruntime-web + @xenova/transformers)
 - 所有圖片處理在本地完成
 
 ### 架構決策原因
 
-**為什麼選擇 VPS + Express + Cloudflare（僅 CDN）組合？**
+**為什麼選擇 VPS + Next.js Standalone + Cloudflare（僅 CDN）組合？**
 
-**A. 當前需要的後端功能：**
-1. ✅ `/health` endpoint - 用於監控和負載平衡
-2. ✅ `/api/version` endpoint - 版本追蹤和除錯
-3. ✅ 日誌記錄（user-agent + referrer）- 分析和除錯
-4. ✅ Express middleware（Helmet、CORS、Compression）- 安全性和效能優化
+**A. 當前架構選擇：**
+1. ✅ **Next.js Standalone Mode** - 提供完整的生產環境應用
+2. ✅ **Cloudflare CDN** - 全球加速、SSL、WAF 防護
+3. ✅ **PM2 進程管理** - 自動重啟、穩定運行
+4. ✅ **開發環境 Express Backend** - 用於 API 測試和開發驗證
 
-**B. 未來擴展性考量：**
-1. ✅ 使用者帳號系統（v1.2 規劃）
-2. ✅ 伺服器端去背 API（v1.3 規劃，降級方案）
-3. ✅ 付費功能整合（v2.0 規劃）
-4. ✅ 資料庫整合（PostgreSQL / MongoDB）
-5. ✅ 保持架構彈性，支援任何未來需求
+**B. 為什麼使用 Next.js Standalone 而非 Express 層？**
+1. ✅ **簡化架構** - Next.js 內建 Server 足以滿足當前需求
+2. ✅ **性能優化** - Next.js 自動優化、壓縮、快取
+3. ✅ **開發效率** - 減少維護成本，專注前端功能
+4. ✅ **未來彈性** - 需要時可輕鬆加入 Express middleware
+5. ✅ **SSR/SSG 支援** - Next.js 原生支援伺服器渲染和靜態生成
 
-**C. 技術偏好：**
+**C. 未來擴展性考量：**
+1. ✅ 使用者帳號系統（v1.2 規劃）- 可使用 Next.js API Routes 或加入 Express 層
+2. ✅ 伺服器端去背 API（v1.3 規劃，降級方案）- 可使用 Next.js Server Actions 或獨立 API 服務
+3. ✅ 付費功能整合（v2.0 規劃）- Next.js API Routes 整合支付 API
+4. ✅ 資料庫整合（PostgreSQL / MongoDB）- Next.js 完全支援
+5. ✅ 保持架構彈性，需要時可加入 Express 層或獨立 API 服務
+
+**D. Express Backend 的定位：**
+- ✅ **開發測試用途** (port 5566) - 提供 `/health`, `/api/version`, `/api/hello` 等測試 endpoints
+- ✅ **未來擴展基礎** - 已準備好完整的 Express 架構，需要時可立即啟用
+- ⚠️ **生產環境** - 目前使用 Next.js Standalone，Express 暫不用於生產部署
+
+**E. 技術偏好：**
 1. ✅ 想要完全控制伺服器
 2. ✅ 不想完全依賴第三方平台（Cloudflare Pages）
 3. ✅ 已有 VPS (165.154.226.78)，充分利用資源
+4. ✅ 保留後端擴展能力（Express backend 已準備好）
 
-**D. Cloudflare Pages 的限制：**
-- ❌ 無法執行 Express Server
-- ❌ 無法實作自訂 API endpoints
-- ❌ 無法記錄伺服器端日誌
+**F. Cloudflare Pages 的限制：**
+- ❌ 無法自由控制伺服器配置
 - ❌ 資料庫整合受限（僅 D1）
 - ❌ 供應商鎖定風險
 
-**最終決策：採用 VPS + Express + Cloudflare（僅 CDN + Proxy）** ✅
+**最終決策：採用 VPS + Next.js Standalone + Cloudflare（僅 CDN + Proxy）** ✅
+**備註：Express Backend 已準備好，作為未來擴展的基礎設施**
 
 ### 部署配置
 
@@ -167,18 +182,24 @@ Client-side WebGL Runtime (onnxruntime-web)
 - Tailwind CSS 3.4.1
 - shadcn/ui + Radix UI
 - Lucide React 0.546.0
-- **onnxruntime-web 1.19+ (WebGL backend)**
-- FileSaver.js (下載)
-- **ONNX 模型**：U²Net Lite (~4.7 MB) 或 MODNet Lightweight (~6-10 MB)
+- **onnxruntime-web 1.23.0 (WebGL backend)**
+- **@xenova/transformers 2.17.2** (AI 模型處理)
+- file-saver 2.0.5 (下載功能)
+- react-compare-image 3.5.10 (圖片對比)
+- **ONNX 模型**：u2netp.onnx (~4.4 MB)
+- **測試框架**：Vitest 4.0.3 + @testing-library/react 16.3.0
 
 ### 後端
 - Node.js 20 LTS
 - Express 5.1.0
+- TypeScript 5.9.3
 - Helmet 8.1.0（安全 headers）
 - CORS 2.8.5（跨域控制）
 - Compression 1.8.1（Gzip 壓縮）
 - PM2（進程管理和自動重啟）
-- Winston 或 Morgan（日誌記錄）
+- 自定義 Logger Middleware（請求日誌記錄）
+- **測試框架**：Jest 30.2.0 + Supertest 7.1.4
+- **開發工具**：ts-node-dev 2.0.0 (熱重載)
 
 ### 基礎設施
 - Nginx（反向代理）
@@ -190,10 +211,20 @@ Client-side WebGL Runtime (onnxruntime-web)
 
 ## 六、使用流程
 
-1️⃣ **使用者開啟 cloudto.io**
+### 開發環境端口配置
+
+- **前端開發端口**：http://localhost:5173 (Next.js dev server)
+- **後端開發端口**：http://localhost:5566 (Express dev server，測試用途)
+- **生產環境端口**：
+  - 開發環境：3001 (dev-ai.cloudto.io)
+  - 正式環境：3000 (ai.cloudto.io)
+
+### 使用者流程
+
+1️⃣ **使用者開啟 ai.cloudto.io**
    - 請求經過 Cloudflare CDN
    - Cloudflare 自動重定向到 HTTPS
-   - Express 記錄訪問日誌（user-agent + referrer）
+   - Next.js Standalone Server 處理請求
    - 系統自動偵測瀏覽器兼容性（WebGL / WASM）
    - 若不支援，顯示系統需求提示
 
@@ -220,7 +251,6 @@ Client-side WebGL Runtime (onnxruntime-web)
    - 檢視前/後對照（滑桿切換）
    - 換背景色（白底 / 純色 / 自定圖片）
    - 下載去背圖（PNG 透明 / JPG 白底）
-   - Express 記錄下載事件（統計分析）
    - 重新上傳其他圖片
 
 6️⃣ **頁面底部顯示 AdSense 廣告**
@@ -535,71 +565,90 @@ pm2 save
 
 ```
 ai-cloudto-io/
-├── app/                       # Next.js 15 App Router (多語系)
-│   ├── [locale]/             # 動態語言路由
-│   │   ├── layout.tsx        # 語言專屬 Layout
-│   │   ├── page.tsx          # 首頁
-│   │   ├── about/
-│   │   │   └── page.tsx      # 關於頁
-│   │   └── privacy/
-│   │       └── page.tsx      # 隱私政策
-│   ├── layout.tsx            # 根 Layout
-│   └── not-found.tsx
-├── components/
-│   ├── layout/
-│   │   ├── Header.tsx        # 包含語言切換器
-│   │   └── Footer.tsx
-│   ├── ui/                   # shadcn/ui components
-│   │   ├── UploadCard.tsx
-│   │   ├── PreviewCanvas.tsx
-│   │   ├── BgSelector.tsx
-│   │   ├── DownloadButton.tsx
+├── frontend/                  # Next.js 15 前端應用
+│   ├── app/                  # Next.js App Router (多語系)
+│   │   ├── [locale]/        # 動態語言路由
+│   │   │   ├── layout.tsx   # 語言專屬 Layout
+│   │   │   ├── page.tsx     # 首頁
+│   │   │   ├── about/
+│   │   │   │   └── page.tsx # 關於頁
+│   │   │   └── privacy/
+│   │   │       └── page.tsx # 隱私政策
+│   │   ├── layout.tsx       # 根 Layout
+│   │   ├── error.tsx        # Error Boundary
+│   │   ├── not-found.tsx    # 404 頁面
+│   │   └── globals.css      # Global CSS
+│   ├── components/
+│   │   ├── layout/
+│   │   │   ├── Header.tsx   # 包含語言切換器
+│   │   │   └── Footer.tsx
+│   │   ├── ui/              # shadcn/ui components
+│   │   │   ├── button.tsx
+│   │   │   ├── select.tsx
+│   │   │   └── toast.tsx
 │   │   └── LanguageSwitcher.tsx  # 語言切換組件
-│   └── BrowserCheck.tsx
-├── lib/
-│   ├── onnx-runtime.ts
-│   ├── image-processing.ts
-│   └── i18n.ts               # next-intl 配置
-├── locales/                   # 多語系翻譯檔案
-│   ├── zh-tw.json            # 繁體中文（預設）
-│   ├── en.json               # English
-│   ├── zh-cn.json            # 简体中文
-│   ├── ja.json               # 日本語
-│   └── index.ts              # 語言配置和型別
-├── public/
-│   ├── models/
-│   │   └── u2net-lite.onnx   # ONNX 模型（5-10 MB）
-│   ├── og-image.png
-│   └── favicon.ico
-├── styles/
-│   └── globals.css
-├── backend/                   # Express 後端
-│   ├── server.ts
-│   ├── routes/
-│   │   ├── health.ts
-│   │   └── version.ts
-│   ├── middlewares/
-│   │   ├── security.ts
-│   │   ├── logging.ts
-│   │   └── cors.ts
-│   └── utils/
-│       └── logger.ts
-├── docs/                      # 文件
+│   ├── hooks/               # 自定義 React Hooks
+│   ├── lib/
+│   │   ├── onnx-runtime.ts
+│   │   ├── image-processing.ts
+│   │   └── utils.ts         # 工具函數
+│   ├── locales/             # 多語系翻譯檔案
+│   │   ├── zh-tw.json       # 繁體中文（預設）
+│   │   ├── en.json          # English
+│   │   ├── zh-cn.json       # 简体中文
+│   │   ├── ja.json          # 日本語
+│   │   └── index.ts         # 語言配置和型別
+│   ├── public/
+│   │   ├── models/
+│   │   │   └── u2netp.onnx  # ONNX 模型（~4.4 MB）
+│   │   ├── og-image.png
+│   │   └── favicon.ico
+│   ├── coverage/            # 測試覆蓋率報告
+│   ├── .env.example         # 環境變數範例
+│   ├── ecosystem.config.js  # PM2 配置（僅用於生產部署）
+│   ├── i18n.ts              # next-intl 配置
+│   ├── middleware.ts        # Next.js middleware（處理語言路由）
+│   ├── next.config.ts       # Next.js 配置
+│   ├── package.json
+│   ├── tailwind.config.ts   # Tailwind 配置（多語系字體）
+│   ├── tsconfig.json
+│   ├── vitest.config.ts     # Vitest 測試配置
+│   └── vitest.setup.ts      # Vitest 設置檔
+│
+├── backend/                  # Express 後端（開發測試用途）
+│   ├── src/
+│   │   ├── index.ts         # Express Server 入口
+│   │   ├── __tests__/       # 測試目錄
+│   │   ├── routes/
+│   │   │   ├── health.ts    # 健康檢查
+│   │   │   ├── version.ts   # 版本資訊
+│   │   │   ├── hello.ts     # 測試 API
+│   │   │   └── error-example.ts # 錯誤處理範例
+│   │   └── middlewares/
+│   │       ├── logger.ts    # 日誌記錄
+│   │       └── error-handler.ts # 錯誤處理
+│   ├── dist/                # TypeScript 編譯輸出
+│   ├── coverage/            # 測試覆蓋率報告
+│   ├── .env.example         # 環境變數範例
+│   ├── jest.config.js       # Jest 測試配置
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── docs/                     # 專案文件
+│   ├── architecture/        # 架構文件
 │   ├── design/
 │   │   └── design-system.md
 │   ├── devops/
 │   │   └── devops-guide.md
 │   └── prd/
 │       └── ai.cloudto.io-PRD-v1.0.md
-├── .env.development           # Dev 環境變數
-├── .env.production            # Prod 環境變數
-├── ecosystem.config.js        # PM2 配置
-├── i18n.config.ts            # next-intl 配置
-├── middleware.ts             # Next.js middleware（處理語言路由）
-├── next.config.mjs
-├── package.json
-├── tailwind.config.ts        # Tailwind 配置（多語系字體）
-└── tsconfig.json
+│
+├── deploy/                   # 部署相關腳本和配置
+├── scripts/                  # 自動化腳本
+├── ecosystem.config.js       # PM2 配置（生產部署）
+├── package.json              # 根目錄依賴（共用套件）
+├── package-lock.json
+└── README.md                 # 專案說明
 ```
 
 ---
@@ -648,15 +697,16 @@ ai-cloudto-io/
 ### 已規劃功能
 
 **v1.2 - 使用者帳號系統：**
-- Express + PostgreSQL / MongoDB
+- Next.js API Routes + PostgreSQL / MongoDB
 - JWT 身份驗證
 - 使用者設定儲存
 - 圖片歷史記錄
+- **或**：啟用 Express Backend 作為獨立 API 服務
 
 **v1.3 - 伺服器端去背 API：**
 - 給不支援 WebGL 的裝置使用
 - Python + ONNX Runtime（GPU）
-- Express 轉發到 Python 服務
+- Next.js API Routes 或 Express Backend 轉發到 Python 服務
 - 付費功能（限制次數）
 
 **v2.0 - 進階功能：**
@@ -664,20 +714,33 @@ ai-cloudto-io/
 - WebSocket 即時處理
 - AI 智慧修邊
 - 付費高畫質模型（伺服器端 GPU 加速）
+- 可選擇性啟用 Express Backend 作為完整 API 層
 
 ### 技術架構演進
 
 ```
-v1.0: Cloudflare → Nginx → Express → Next.js → WebGL (客戶端)
+v1.0 (當前): Cloudflare → Nginx → Next.js Standalone → WebGL (客戶端)
+                                   (Express Backend 保留，未啟用)
 
+v1.2: Cloudflare → Nginx → Next.js (with API Routes) → WebGL
+                              ↓
+                        PostgreSQL (帳號系統)
+
+或選擇啟用 Express：
 v1.2: Cloudflare → Nginx → Express → Next.js → WebGL
                               ↓
                         PostgreSQL (帳號系統)
 
-v2.0: Cloudflare → Nginx → Express → Next.js → WebGL
-                              ↓            ↓
-                        PostgreSQL   Python API (GPU 去背)
+v2.0: Cloudflare → Nginx → Next.js / Express → WebGL
+                              ↓              ↓
+                        PostgreSQL      Python API (GPU 去背)
 ```
+
+**架構彈性說明：**
+- ✅ **當前**：使用 Next.js Standalone 提供完整服務
+- ✅ **未來選項 A**：使用 Next.js API Routes 擴展後端功能（簡化架構）
+- ✅ **未來選項 B**：啟用完整 Express Backend（完全控制、複雜功能）
+- ✅ **混合架構**：Next.js 前端 + Express 獨立 API 服務（微服務化）
 
 ---
 
@@ -760,36 +823,61 @@ app.listen(PORT, () => {
 
 ### PM2 Ecosystem 配置
 
+**根目錄 ecosystem.config.js（生產部署）：**
+
 ```javascript
 // ecosystem.config.js
+module.exports = {
+  apps: [{
+    name: 'ai-cloudto-io-dev',
+    script: 'node_modules/.bin/next',
+    args: 'start -p 3001',
+    cwd: '/var/www/ai-cloudto-io-dev/frontend',
+    env: { PORT: 3001 },
+    instances: 1,
+    autorestart: true,
+    max_restarts: 5,
+    min_uptime: '10s',
+  }],
+};
+```
+
+**開發環境（本地）：**
+
+```bash
+# Terminal 1: 啟動前端開發伺服器
+cd frontend
+npm run dev      # Runs on http://localhost:5173
+
+# Terminal 2: 啟動後端開發伺服器（測試用途）
+cd backend
+npm run dev      # Runs on http://localhost:5566
+```
+
+**生產環境建議配置：**
+
+```javascript
+// ecosystem.config.js (生產環境)
 module.exports = {
   apps: [
     {
       name: 'ai-cloudto-io-dev',
-      script: 'npm',
-      args: 'run start:dev',
-      cwd: '/var/www/ai-cloudto-io-dev',
-      env: {
-        NODE_ENV: 'development',
-        PORT: 3001,
-      },
+      script: 'node_modules/.bin/next',
+      args: 'start -p 3001',
+      cwd: '/var/www/ai-cloudto-io-dev/frontend',
+      env: { PORT: 3001, NODE_ENV: 'development' },
       instances: 1,
       autorestart: true,
-      watch: false,
       max_memory_restart: '500M',
     },
     {
       name: 'ai-cloudto-io-prd',
-      script: 'npm',
-      args: 'run start',
-      cwd: '/var/www/ai-cloudto-io-prd',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3000,
-      },
+      script: 'node_modules/.bin/next',
+      args: 'start -p 3000',
+      cwd: '/var/www/ai-cloudto-io-prd/frontend',
+      env: { PORT: 3000, NODE_ENV: 'production' },
       instances: 2,  // 多實例負載平衡
       autorestart: true,
-      watch: false,
       max_memory_restart: '1G',
     },
   ],
@@ -1091,3 +1179,11 @@ t('processing', { progress: 75 }) // "處理中 75%"
 **修訂歷史：**
 - v1.0 (2025-10-23): 初始版本
 - v1.1 (2025-10-25): 技術可行性修訂（WebGL backend、簡化架構、更新性能目標、多語系支援）
+- v1.2 (2025-10-26): 實際現狀校正
+  - 更新技術棧版本（onnxruntime-web 1.23.0, @xenova/transformers 2.17.2）
+  - 加入測試框架（Vitest, Jest）
+  - 澄清架構（Next.js Standalone 為主，Express Backend 為開發測試用途）
+  - 更新開發端口（前端 5173, 後端 5566）
+  - 更新專案目錄結構（加入 hooks/, coverage/, deploy/ 等）
+  - 更新 ONNX 模型資訊（u2netp.onnx ~4.4 MB）
+  - 更新 PM2 配置（實際使用 Next.js standalone 部署）
