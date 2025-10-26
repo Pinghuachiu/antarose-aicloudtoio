@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ type UploadCardProps = {
 
 export function UploadCard({ onFileSelect, disabled = false }: UploadCardProps) {
   const t = useTranslations('upload');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -72,7 +74,7 @@ export function UploadCard({ onFileSelect, disabled = false }: UploadCardProps) 
             className="mb-4"
             onClick={(e) => {
               e.stopPropagation();
-              document.getElementById('file-input')?.click();
+              fileInputRef.current?.click();
             }}
           >
             {t('selectFile')}
@@ -86,7 +88,7 @@ export function UploadCard({ onFileSelect, disabled = false }: UploadCardProps) 
 
           {/* 隱藏的檔案輸入 */}
           <input
-            id="file-input"
+            ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
             className="hidden"
