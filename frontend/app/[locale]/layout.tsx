@@ -4,6 +4,7 @@ import { getMessages } from 'next-intl/server';
 import { Inter, Noto_Sans_TC, Noto_Sans_SC, Noto_Sans_JP } from 'next/font/google';
 import { locales, type Locale } from '@/locales';
 import { Toaster } from '@/components/ui/toaster';
+import { NavBar } from '@/components/NavBar/NavBar';
 import '../globals.css';
 
 // 字體配置 - 多語系支援
@@ -76,7 +77,11 @@ export default async function LocaleLayout({
       <body className="antialiased bg-neutral-900 text-neutral-50 font-sans">
         <NextIntlClientProvider messages={messages}>
           <div className="relative flex min-h-screen flex-col">
-            <main className="flex-1">{children}</main>
+            {/* NavBar - 固定在頂部 */}
+            <NavBar />
+
+            {/* 主內容區域 - 添加 padding-top 避免被 NavBar 遮擋 */}
+            <main className="flex-1 pt-16">{children}</main>
           </div>
           <Toaster />
         </NextIntlClientProvider>

@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { type Locale } from '@/locales';
 import { UploadSection } from '@/components/features/upload-section';
 import { BrowserCheck } from '@/components/features/browser-check';
-import { LanguageSwitcher } from '@/components/features/language-switcher';
 import { AVAILABLE_TOOLS, COMING_SOON_TOOLS } from '@/lib/constants/tools';
 
 type Props = {
@@ -30,14 +29,9 @@ export default async function ToolPage({ params }: Props) {
 }
 
 // RemoveBG 完整頁面（保留原有功能）
-function RemoveBGPage({ locale }: { locale: Locale }) {
+function RemoveBGPage({ locale: _locale }: { locale: Locale }) {
   return (
     <div className="container mx-auto px-4 py-8 md:py-16">
-      {/* 語言切換器 - 固定在右上角 */}
-      <div className="fixed top-4 right-4 z-50">
-        <LanguageSwitcher />
-      </div>
-
       {/* Hero 區塊 */}
       <HeroSection />
 
@@ -60,16 +54,11 @@ function RemoveBGPage({ locale }: { locale: Locale }) {
 }
 
 // Coming Soon 頁面
-function ComingSoonPage({ locale, tool }: { locale: Locale; tool: string }) {
+function ComingSoonPage({ locale, tool: _tool }: { locale: Locale; tool: string }) {
   const t = useTranslations('comingSoon');
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-16">
-      {/* 語言切換器 - 固定在右上角 */}
-      <div className="fixed top-4 right-4 z-50">
-        <LanguageSwitcher />
-      </div>
-
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-8">
         <div className="text-8xl mb-4">🚧</div>
         <h1 className="text-display-1 md:text-display-2 gradient-text">
