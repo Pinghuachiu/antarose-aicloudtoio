@@ -12,7 +12,7 @@ import { MobileTabBar } from './MobileTabBar';
  * - 移動端（<768px）：顯示 MobileTabBar
  */
 export function ToolBar() {
-  const [isMobile, setIsMobile] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState<boolean | null>(null);
 
   React.useEffect(() => {
     // 初始化檢測
@@ -29,6 +29,11 @@ export function ToolBar() {
       window.removeEventListener('resize', checkMobile);
     };
   }, []);
+
+  // 避免 SSR hydration mismatch
+  if (isMobile === null) {
+    return null;
+  }
 
   return (
     <>

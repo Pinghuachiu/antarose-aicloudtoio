@@ -25,11 +25,11 @@ export interface ToolBarState {
  */
 const getDefaultPosition = (): ToolBarPosition => {
   if (typeof window === 'undefined') {
-    return { x: 20, y: 300 };
+    return { x: 20, y: 200 }; // SSR 固定預設值
   }
   return {
     x: 20,
-    y: window.innerHeight / 2 - 150, // 減去工具列高度的一半，使其垂直居中
+    y: Math.max(200, window.innerHeight / 2 - 150), // 減去工具列高度的一半，使其垂直居中
   };
 };
 

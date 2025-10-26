@@ -47,19 +47,25 @@ export function DesktopToolBar() {
   };
 
   // 處理拖動中
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = React.useCallback((e: MouseEvent) => {
     if (!isDragging) return;
 
-    const newX = e.clientX - dragStartPos.current.x;
-    const newY = e.clientY - dragStartPos.current.y;
+    let newX = e.clientX - dragStartPos.current.x;
+    let newY = e.clientY - dragStartPos.current.y;
+
+    // 邊界檢查（合併 High-2 修復）
+    const toolbarWidth = isCollapsed ? 64 : 256;
+    const toolbarHeight = 400;
+    newX = Math.max(0, Math.min(newX, window.innerWidth - toolbarWidth));
+    newY = Math.max(0, Math.min(newY, window.innerHeight - toolbarHeight));
 
     setPosition({ x: newX, y: newY });
-  };
+  }, [isDragging, isCollapsed, setPosition]);
 
   // 處理拖動結束
-  const handleMouseUp = () => {
+  const handleMouseUp = React.useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
 
   // 監聽全局 mouse 事件
   React.useEffect(() => {
@@ -72,16 +78,13 @@ export function DesktopToolBar() {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDragging]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // 獲取當前工具的 slug
-  const getCurrentTool = () => {
+  // 獲取當前工具的 slug（使用 useMemo 優化性能）
+  const currentTool = React.useMemo(() => {
     const pathParts = pathname.split('/');
     return pathParts[pathParts.length - 1];
-  };
-
-  const currentTool = getCurrentTool();
+  }, [pathname]);
 
   return (
     <div

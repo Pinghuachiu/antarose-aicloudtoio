@@ -30,23 +30,36 @@ export function MobileTabBar() {
   const currentTool = getCurrentTool();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 z-40 bg-neutral-900/95 backdrop-blur-sm border-t border-neutral-800">
+    <nav
+      className="fixed bottom-0 left-0 right-0 h-16 z-40 bg-neutral-900/95 backdrop-blur-sm border-t border-neutral-800"
+      role="tablist"
+      aria-label="工具切換列表"
+    >
       <div className="h-full px-2 flex items-center justify-around max-w-md mx-auto">
         {TOOLS.map((tool) => {
           const Icon = tool.icon;
           const isActive = currentTool === tool.slug;
+          const isDisabled = tool.comingSoon;
 
           return (
             <Link
               key={tool.id}
-              href={`/${locale}/${tool.slug}`}
+              href={isDisabled ? '#' : `/${locale}/${tool.slug}`}
+              role="tab"
+              aria-selected={isActive}
+              aria-disabled={isDisabled}
+              onClick={(e) => {
+                if (isDisabled) {
+                  e.preventDefault();
+                }
+              }}
               className={`
                 flex flex-col items-center justify-center gap-1 py-2 px-3 rounded-lg transition-all duration-200 flex-1
                 ${isActive
                   ? 'text-primary-400'
                   : 'text-neutral-400 hover:text-neutral-200'
                 }
-                ${tool.comingSoon ? 'opacity-50' : ''}
+                ${isDisabled ? 'opacity-50 pointer-events-none' : ''}
               `}
               aria-label={`切換到${tool.name[locale]}`}
             >
