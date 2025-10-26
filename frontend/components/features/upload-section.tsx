@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { UploadCard } from './upload-card';
 import { PreviewCanvas } from './preview-canvas';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,32 @@ export function UploadSection() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [modelReady, setModelReady] = useState(false);
   const { toast } = useToast();
+
+  // 從 sessionStorage 恢復狀態（切換語言時保留處理結果）
+  useEffect(() => {
+    const savedOriginal = sessionStorage.getItem('upload-original-image');
+    const savedProcessed = sessionStorage.getItem('upload-processed-image');
+
+    if (savedOriginal) setOriginalImage(savedOriginal);
+    if (savedProcessed) setProcessedImage(savedProcessed);
+  }, []);
+
+  // 儲存狀態到 sessionStorage
+  useEffect(() => {
+    if (originalImage) {
+      sessionStorage.setItem('upload-original-image', originalImage);
+    } else {
+      sessionStorage.removeItem('upload-original-image');
+    }
+  }, [originalImage]);
+
+  useEffect(() => {
+    if (processedImage) {
+      sessionStorage.setItem('upload-processed-image', processedImage);
+    } else {
+      sessionStorage.removeItem('upload-processed-image');
+    }
+  }, [processedImage]);
 
   // 初始化 Transformers.js 模型（僅執行一次）
   const initModel = useCallback(async () => {
@@ -196,6 +222,9 @@ export function UploadSection() {
     setOriginalImage(null);
     setProcessedImage(null);
     setIsProcessing(false);
+    // 清除 sessionStorage
+    sessionStorage.removeItem('upload-original-image');
+    sessionStorage.removeItem('upload-processed-image');
   }, []);
 
   return (
