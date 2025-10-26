@@ -1,6 +1,7 @@
 /**
  * Transformers.js Background Removal
- * 使用 @xenova/transformers 和 RMBG-1.4 模型
+ * 使用 @xenova/transformers 和 MODNet 模型
+ * 模型：Xenova/modnet (Apache 2.0 License - 可商用)
  */
 
 import { AutoModel, AutoProcessor, RawImage, env } from '@xenova/transformers';
@@ -25,9 +26,11 @@ export async function initializeModel() {
     // 配置使用 WebGPU（如果可用）
     env.backends.onnx.wasm.proxy = false;
 
-    // 載入 RMBG-1.4 模型
-    model = await AutoModel.from_pretrained('briaai/RMBG-1.4');
-    processor = await AutoProcessor.from_pretrained('briaai/RMBG-1.4');
+    // 載入 MODNet 模型（Apache 2.0 - 可商用）
+    model = await AutoModel.from_pretrained('Xenova/modnet', {
+      device: 'webgpu',
+    });
+    processor = await AutoProcessor.from_pretrained('Xenova/modnet');
 
     console.log('[Transformers] 模型載入成功');
     return true;
@@ -38,7 +41,7 @@ export async function initializeModel() {
 }
 
 /**
- * 執行背景移除
+ * 執行背景移除（MODNet 模型）
  */
 export async function removeBackground(imageElement: HTMLImageElement): Promise<ImageData | null> {
   try {
@@ -55,13 +58,16 @@ export async function removeBackground(imageElement: HTMLImageElement): Promise<
     // 預處理
     const { pixel_values } = await processor(image);
 
-    // 推論
+    // 推論（產生 alpha matte）
     const { output } = await model({ input: pixel_values });
 
-    // 後處理：取得遮罩
-    const mask = await RawImage.fromTensor(output[0].mul(255).to('uint8')).resize(image.width, image.height);
+    // 後處理：取得遮罩並調整大小
+    const mask = await RawImage.fromTensor(output[0].mul(255).to('uint8')).resize(
+      image.width,
+      image.height
+    );
 
-    // 建立透明背景圖片
+    // 建立 canvas
     const canvas = document.createElement('canvas');
     canvas.width = image.width;
     canvas.height = image.height;
@@ -70,30 +76,19 @@ export async function removeBackground(imageElement: HTMLImageElement): Promise<
     // 繪製原圖
     ctx.drawImage(imageElement, 0, 0);
 
-    // 應用遮罩
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // 取得像素資料
+    const pixelData = ctx.getImageData(0, 0, image.width, image.height);
     const maskData = mask.data;
 
-    // 逐像素應用遮罩（前景保留，背景透明）
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      const pixelIndex = i / 4;
-      const maskValue = maskData[pixelIndex];
-
-      // RMBG 模型：maskValue 越高表示越可能是前景
-      // 使用閾值 128 區分前景/背景
-      if (maskValue >= 128) {
-        // 前景：保持不變，alpha = 255
-        imageData.data[i + 3] = 255;
-      } else {
-        // 背景：設為透明
-        imageData.data[i + 3] = 0;
-      }
+    // 將 mask 值直接應用到 alpha 通道（產生平滑邊緣）
+    for (let i = 0; i < maskData.length; ++i) {
+      pixelData.data[4 * i + 3] = maskData[i];
     }
 
-    ctx.putImageData(imageData, 0, 0);
+    ctx.putImageData(pixelData, 0, 0);
 
     console.log('[Transformers] 處理完成');
-    return imageData;
+    return pixelData;
   } catch (error) {
     console.error('[Transformers] 處理失敗:', error);
     return null;
