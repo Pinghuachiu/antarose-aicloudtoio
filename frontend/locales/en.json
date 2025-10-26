@@ -147,5 +147,10 @@
       "contact": "Contact"
     },
     "poweredBy": "Powered by"
+  },
+  "comingSoon": {
+    "title": "Coming Soon",
+    "description": "This tool is coming soon. Stay tuned!",
+    "backToRemoveBG": "Back to Background Remover"
   }
 }

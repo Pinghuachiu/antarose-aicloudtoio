@@ -147,5 +147,10 @@
       "contact": "聯絡我們"
     },
     "poweredBy": "技術支援"
+  },
+  "comingSoon": {
+    "title": "即將推出",
+    "description": "這個工具即將推出，敬請期待！",
+    "backToRemoveBG": "返回移除背景工具"
   }
 }

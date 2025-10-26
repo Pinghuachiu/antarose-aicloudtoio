@@ -147,5 +147,10 @@
       "contact": "お問い合わせ"
     },
     "poweredBy": "技術提供"
+  },
+  "comingSoon": {
+    "title": "近日公開",
+    "description": "このツールは近日公開予定です。お楽しみに！",
+    "backToRemoveBG": "背景削除ツールに戻る"
   }
 }
