@@ -34,8 +34,10 @@ export function PreviewCanvas({
       <CardContent className="p-0">
         {/* 使用 ReactCompareImage（參考 image-matting） */}
         <div
-          className="relative aspect-square overflow-hidden"
+          className="relative overflow-hidden"
           style={{
+            height: '80vh',
+            maxHeight: '1200px',
             background: 'repeating-conic-gradient(#808080 0% 25%, #ffffff 0% 50%) 50% / 20px 20px',
           }}
         >
@@ -43,6 +45,8 @@ export function PreviewCanvas({
             <ReactCompareImage
               leftImage={originalImage}
               rightImage={processedImage}
+              leftImageCss={{ objectFit: 'contain', height: '100%' }}
+              rightImageCss={{ objectFit: 'contain', height: '100%' }}
               sliderLineWidth={4}
               sliderLineColor="#0070f3"
             />
