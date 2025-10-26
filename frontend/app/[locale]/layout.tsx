@@ -5,6 +5,7 @@ import { Inter, Noto_Sans_TC, Noto_Sans_SC, Noto_Sans_JP } from 'next/font/googl
 import { locales, type Locale } from '@/locales';
 import { Toaster } from '@/components/ui/toaster';
 import { NavBar } from '@/components/NavBar/NavBar';
+import { ToolBar } from '@/components/ToolBar';
 import '../globals.css';
 
 // 字體配置 - 多語系支援
@@ -80,8 +81,11 @@ export default async function LocaleLayout({
             {/* NavBar - 固定在頂部 */}
             <NavBar />
 
-            {/* 主內容區域 - 添加 padding-top 避免被 NavBar 遮擋 */}
-            <main className="flex-1 pt-16">{children}</main>
+            {/* ToolBar - 響應式工具列 */}
+            <ToolBar />
+
+            {/* 主內容區域 - 調整高度避免被 NavBar 和 TabBar 遮擋 */}
+            <main className="flex-1 pt-16 md:pb-0 pb-16">{children}</main>
           </div>
           <Toaster />
         </NextIntlClientProvider>
