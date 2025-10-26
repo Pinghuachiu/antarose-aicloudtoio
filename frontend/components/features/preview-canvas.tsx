@@ -46,8 +46,8 @@ export function PreviewCanvas({
               <ReactCompareImage
                 leftImage={originalImage}
                 rightImage={processedImage}
-                leftImageCss={{ height: '100%', width: '100%', objectFit: 'cover' }}
-                rightImageCss={{ height: '100%', width: '100%', objectFit: 'cover' }}
+                leftImageCss={{ height: '100%', width: '100%', objectFit: 'contain' }}
+                rightImageCss={{ height: '100%', width: '100%', objectFit: 'contain' }}
                 sliderLineWidth={4}
                 sliderLineColor="#0070f3"
               />
