@@ -1,7 +1,6 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  darkMode: ['class'],
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
@@ -34,103 +33,66 @@ const config: Config = {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
 
-        // 主色調
+        // TinyWow 風格主色調
         primary: {
-          50: '#e0f2ff',
-          100: '#b9e1ff',
-          200: '#7cc6ff',
-          300: '#3da9ff',
-          400: '#0e8dff',
-          500: '#0070f3',
-          600: '#005bc4',
-          700: '#004796',
-          800: '#003269',
-          900: '#001d3d',
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: '#1A8FE3',
+          hover: '#1570BD',
+          light: '#E0F2FE',
+          foreground: '#FFFFFF',
         },
 
-        // 輔助色
+        // 文字顏色
+        text: {
+          primary: '#020817',
+          heading: '#181D20',
+          secondary: '#6B7280',
+          disabled: '#9CA3AF',
+        },
+
+        // 背景顏色
+        background: {
+          main: '#FFFFFF',
+          secondary: '#F6F6F6',
+          hover: '#F9FAFB',
+        },
+
+        // 邊框顏色
+        border: {
+          DEFAULT: '#D1D5DB',
+          hover: '#9CA3AF',
+          focus: '#1A8FE3',
+        },
+
+        // 語義色彩
+        success: '#10B981',
+        warning: '#F59E0B',
+        error: '#EF4444',
+        info: '#3B82F6',
+
+        // shadcn/ui 兼容色彩
         secondary: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
+          DEFAULT: '#F6F6F6',
+          foreground: '#020817',
         },
-
-        // 強調色
         accent: {
-          50: '#fff7ed',
-          100: '#ffedd5',
-          200: '#fed7aa',
-          300: '#fdba74',
-          400: '#fb923c',
-          500: '#f97316',
-          600: '#ea580c',
-          700: '#c2410c',
-          800: '#9a3412',
-          900: '#7c2d12',
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
-        },
-
-        // 中性色
-        neutral: {
-          50: '#fafafa',
-          100: '#f4f4f5',
-          200: '#e4e4e7',
-          300: '#d4d4d8',
-          400: '#a1a1aa',
-          500: '#71717a',
-          600: '#52525b',
-          700: '#3f3f46',
-          800: '#27272a',
-          850: '#1f1f23',
-          900: '#18181b',
-          950: '#0a0a0b',
-        },
-
-        // 語意色
-        success: {
-          500: '#10b981',
-          600: '#059669',
-        },
-        warning: {
-          500: '#f59e0b',
-          600: '#d97706',
-        },
-        error: {
-          500: '#ef4444',
-          600: '#dc2626',
-        },
-        info: {
-          500: '#06b6d4',
-          600: '#0891b2',
-        },
-
-        card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
-        },
-        popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
+          DEFAULT: '#1A8FE3',
+          foreground: '#FFFFFF',
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+          DEFAULT: '#F6F6F6',
+          foreground: '#6B7280',
+        },
+        card: {
+          DEFAULT: '#FFFFFF',
+          foreground: '#020817',
+        },
+        popover: {
+          DEFAULT: '#FFFFFF',
+          foreground: '#020817',
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
+          DEFAULT: '#EF4444',
+          foreground: '#FFFFFF',
         },
       },
 
@@ -190,41 +152,14 @@ const config: Config = {
         '3xl': '1.75rem',
       },
 
+      fontFamily: {
+        sans: ['var(--font-inter)', 'var(--font-noto-tc)', 'var(--font-noto-sc)', 'var(--font-noto-jp)', 'system-ui', 'sans-serif'],
+      },
+
       boxShadow: {
-        'dark-sm': '0 2px 4px 0 rgba(0, 0, 0, 0.3)',
-        'dark-md': '0 12px 20px -4px rgba(0, 0, 0, 0.4)',
-        'dark-lg': '0 25px 35px -8px rgba(0, 0, 0, 0.5)',
-        'glow-primary': '0 0 20px rgba(0, 112, 243, 0.4)',
-        'glow-accent': '0 0 20px rgba(249, 115, 22, 0.4)',
-      },
-
-      backgroundImage: {
-        'gradient-primary':
-          'linear-gradient(135deg, #0070f3 0%, #8b5cf6 100%)',
-        'gradient-glass':
-          'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
-      },
-
-      keyframes: {
-        'pulse-glow': {
-          '0%, 100%': {
-            opacity: '1',
-            boxShadow: '0 0 20px rgba(0, 112, 243, 0.4)',
-          },
-          '50%': {
-            opacity: '0.8',
-            boxShadow: '0 0 40px rgba(0, 112, 243, 0.8)',
-          },
-        },
-        'progress-shimmer': {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
-        },
-      },
-
-      animation: {
-        'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
-        'progress-shimmer': 'progress-shimmer 2s linear infinite',
+        'nav': '0 2px 8px rgba(0, 0, 0, 0.08)',
+        'card': '0 2px 12px rgba(0, 0, 0, 0.08)',
+        'button': '0 2px 6px rgba(26, 143, 227, 0.2)',
       },
     },
   },

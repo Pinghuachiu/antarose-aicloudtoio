@@ -133,11 +133,11 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${fontMap[locale]} dark`} suppressHydrationWarning>
+    <html lang={locale} className={fontMap[locale]} suppressHydrationWarning>
       <head>
         <StructuredData locale={locale} />
       </head>
-      <body className="antialiased bg-neutral-900 text-neutral-50 font-sans">
+      <body className="antialiased bg-white text-text-primary font-sans">
         <NextIntlClientProvider messages={messages}>
           <div className="relative flex min-h-screen flex-col">
             {/* NavBar - 固定在頂部 */}

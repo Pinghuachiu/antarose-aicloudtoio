@@ -4,48 +4,36 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 210 100% 50%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 265 89% 78%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 24 95% 53%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 210 100% 50%;
-    --radius: 1rem;
-  }
+    /* 淺色主題色彩變數 */
+    --background: 0 0% 100%; /* White */
+    --foreground: 222 47% 11%; /* Text Dark */
 
-  .dark {
-    --background: 240 10% 9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 12%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 210 100% 50%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 265 89% 78%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 24 95% 53%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 24%;
-    --input: 240 3.7% 24%;
-    --ring: 210 100% 50%;
+    --primary: 203 91% 49%; /* #1A8FE3 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%; /* Light Gray */
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 203 91% 49%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 14% 83%; /* #D1D5DB */
+    --input: 214 14% 83%;
+    --ring: 203 91% 49%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --radius: 0.5rem;
   }
 }
 
@@ -55,44 +43,29 @@
   }
 
   body {
-    @apply bg-neutral-900 text-neutral-50 antialiased;
+    @apply bg-white text-text-primary antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }
 
-  /* 自訂捲軸（深色） */
+  /* 自訂捲軸（淺色） */
   ::-webkit-scrollbar {
     @apply w-2;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-neutral-900;
+    @apply bg-gray-100;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-neutral-700 rounded-full;
+    @apply bg-gray-300 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-neutral-600;
+    @apply bg-gray-400;
   }
 }
 
 @layer components {
-  /* 玻璃擬態卡片 */
-  .glass-card {
-    @apply bg-neutral-800/50 backdrop-blur-xl border border-neutral-700/50 rounded-2xl shadow-dark-md;
-  }
-
-  /* 漸變文字 */
-  .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-secondary-500;
-  }
-
-  /* 發光效果 */
-  .glow-effect {
-    @apply shadow-glow-primary;
-  }
-
   /* 標準過渡 */
   .transition-standard {
     @apply transition-all duration-200 ease-out;
@@ -105,6 +78,17 @@
 }
 
 @layer utilities {
+  /* 虛線邊框樣式 */
+  .dashed-upload-border {
+    border: 2px dashed #D1D5DB;
+    border-radius: 8px;
+  }
+
+  .dashed-upload-border:hover {
+    border-color: #1A8FE3;
+    background-color: #F0F9FF;
+  }
+
   /* 文字截斷 */
   .text-truncate {
     @apply overflow-hidden text-ellipsis whitespace-nowrap;
@@ -123,35 +107,3 @@
   }
 }
 
-/* 載入動畫 - 脈衝效果 */
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 1;
-    box-shadow: 0 0 20px rgba(0, 112, 243, 0.4);
-  }
-  50% {
-    opacity: 0.8;
-    box-shadow: 0 0 40px rgba(0, 112, 243, 0.8);
-  }
-}
-
-.loading-pulse {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* 進度條動畫 */
-@keyframes progress-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.progress-bar {
-  background: linear-gradient(
-    90deg,
-    #0070f3 0%,
-    #8b5cf6 50%,
-    #0070f3 100%
-  );
-  background-size: 200% 100%;
-  animation: progress-shimmer 2s linear infinite;
-}
