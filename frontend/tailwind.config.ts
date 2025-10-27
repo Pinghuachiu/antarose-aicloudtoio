@@ -27,7 +27,7 @@ const config: Config = {
     },
     extend: {
       colors: {
-        border: 'hsl(var(--border))',
+        // CSS 變數支援（shadcn/ui）
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
@@ -47,13 +47,6 @@ const config: Config = {
           heading: '#181D20',
           secondary: '#6B7280',
           disabled: '#9CA3AF',
-        },
-
-        // 背景顏色
-        background: {
-          main: '#FFFFFF',
-          secondary: '#F6F6F6',
-          hover: '#F9FAFB',
         },
 
         // 邊框顏色

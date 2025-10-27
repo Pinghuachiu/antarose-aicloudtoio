@@ -26,22 +26,22 @@ export function LanguageSwitcher() {
 
   return (
     <div className="flex items-center gap-2">
-      <Globe className="w-4 h-4 text-neutral-400" />
+      <Globe className="w-4 h-4 text-text-secondary" />
       <Select value={currentLocale} onValueChange={handleLocaleChange}>
-        <SelectTrigger className="w-[180px] bg-neutral-800/50 border-neutral-700 text-neutral-100 hover:bg-neutral-800 transition-colors">
+        <SelectTrigger className="w-[140px] sm:w-[160px] bg-white border-border text-text-primary hover:bg-background-hover transition-colors">
           <SelectValue>
             <span className="flex items-center gap-2">
               <span>{localeFlags[currentLocale]}</span>
-              <span>{localeNames[currentLocale]}</span>
+              <span className="hidden sm:inline">{localeNames[currentLocale]}</span>
             </span>
           </SelectValue>
         </SelectTrigger>
-        <SelectContent className="bg-neutral-800 border-neutral-700">
+        <SelectContent className="bg-white border-border">
           {locales.map((locale) => (
             <SelectItem
               key={locale}
               value={locale}
-              className="text-neutral-100 hover:bg-neutral-700 focus:bg-neutral-700 cursor-pointer"
+              className="text-text-primary hover:bg-background-hover focus:bg-background-hover cursor-pointer"
             >
               <span className="flex items-center gap-2">
                 <span>{localeFlags[locale]}</span>
