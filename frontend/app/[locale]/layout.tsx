@@ -4,8 +4,7 @@ import { getMessages } from 'next-intl/server';
 import { Inter, Noto_Sans_TC, Noto_Sans_SC, Noto_Sans_JP } from 'next/font/google';
 import { locales, type Locale } from '@/locales';
 import { Toaster } from '@/components/ui/toaster';
-import { NavBar } from '@/components/NavBar/NavBar';
-import { ToolBar } from '@/components/ToolBar';
+import { TopNavigation } from '@/components/NavBar/TopNavigation';
 import { StructuredData } from '@/components/StructuredData';
 import '../globals.css';
 
@@ -140,14 +139,11 @@ export default async function LocaleLayout({
       <body className="antialiased bg-white text-text-primary font-sans">
         <NextIntlClientProvider messages={messages}>
           <div className="relative flex min-h-screen flex-col">
-            {/* NavBar - 固定在頂部 */}
-            <NavBar />
+            {/* 頂部導航 */}
+            <TopNavigation locale={locale} />
 
-            {/* ToolBar - 響應式工具列 */}
-            <ToolBar />
-
-            {/* 主內容區域 - 調整高度避免被 NavBar 和 TabBar 遮擋 */}
-            <main className="flex-1 pt-16 md:pb-0 pb-16">{children}</main>
+            {/* 主內容區域 - pt-20 為導航欄高度（64px）+ 額外間距（16px） */}
+            <main className="flex-1 pt-20">{children}</main>
           </div>
           <Toaster />
         </NextIntlClientProvider>
